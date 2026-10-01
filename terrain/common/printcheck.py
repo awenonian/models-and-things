@@ -109,3 +109,20 @@ def check(m: Manifold, up: tuple[float, float, float], max_angle: float = 45.0,
                                       float(q[:, 2].min()), tuple(np.round(c, 1))))
     rep.overhangs.sort(key=lambda o: -o.area)
     return rep
+
+
+def orient(m: Manifold, up: tuple[float, float, float]) -> Manifold:
+    """Rotate `m` so `up` points to +Z, then centre it on the origin, resting on z = 0."""
+    u = np.asarray(up, float)
+    u /= np.linalg.norm(u)
+    z = np.array([0.0, 0.0, 1.0])
+    v = np.cross(u, z)
+    c = float(np.dot(u, z))
+    if np.linalg.norm(v) < 1e-9:
+        r = np.eye(3) if c > 0 else np.diag([1.0, -1.0, -1.0])
+    else:
+        vx = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
+        r = np.eye(3) + vx + vx @ vx * (1 / (1 + c))
+    m = m.transform(np.hstack([r, np.zeros((3, 1))]))
+    bb = m.bounding_box()
+    return m.translate((-(bb[0] + bb[3]) / 2, -(bb[1] + bb[4]) / 2, -bb[2]))

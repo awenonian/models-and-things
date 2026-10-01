@@ -28,10 +28,11 @@ from pathlib import Path
 from manifold3d import CrossSection, Manifold
 
 from terrain.common.csg import (
-    box, circle_pts, cyl, ellipse, extrude_xy, extrude_xz, extrude_yz, gear_pts,
+    ball_pocket, box, circle_pts, cyl, ellipse, extrude_xy, extrude_xz, extrude_yz,
     revolve_profile, ring, section, segmental_arch_pts, sphere, star_pts,
     text_section, union, write_stl,
 )
+from terrain.star_theater.ornament import dove, pilaster
 
 # ---------------------------------------------------------------------------
 # Key dimensions (mm)
@@ -69,13 +70,12 @@ NICHE_SPRING = 143.0
 # valance, marquee, finial) reaches back to that plane. The wall is also cut
 # into left/centre/right at x = +-WALL_SEAM_X. The deck is cut into quarters at
 # x = 0 and y = SPLIT_Y (that seam hides under the wall). Parts align with
-# 1.75 mm filament pins in 2.1 mm holes, and the wall's 2 mm tenon drops into a
-# matching slot in the deck.
+# 4.5 mm steel BBs in hemispherical pockets (see csg.BALL_D), and the wall's
+# 2 mm tenon drops into a matching slot in the deck.
 SPLIT_Y = -WALL_T / 2
 WALL_SEAM_X = OPEN_HW + 9.0
 TENON = 2.0
 SLOT_CLEAR = 0.2
-PIN_R = 1.05
 
 PLANK_W = 12.0
 GROOVE_W, GROOVE_D = 0.8, 0.6
@@ -446,44 +446,13 @@ def proscenium_frame() -> Manifold:
     parts.append(extrude_xz(section(star_pts(0, crown + 7, 5.2)), 0, 8.4))
     # Pilasters either side.
     for sx in (-1, 1):
-        parts.append(pilaster(sx * 121.0))
+        parts.append(pilaster(sx * 121.0, STAGE_H, WALL_TOP - 14))
     # Corner pilasters at the wall ends.
     for sx in (-1, 1):
         parts.append(box(sx * 191, sx * HALF_W, -0.1, 3.0, STAGE_H, WALL_TOP - 14))
         parts.append(box(sx * 190, sx * HALF_W, -0.1, 4.0, STAGE_H, STAGE_H + 9))
         parts.append(box(sx * 190, sx * HALF_W, -0.1, 4.5, WALL_TOP - 21, WALL_TOP - 14))
     return union(parts)
-
-
-def pilaster(cx: float) -> Manifold:
-    hw = 8.0
-    z_top = WALL_TOP - 14
-    p = box(cx - hw, cx + hw, -0.1, 4.0, STAGE_H, z_top)
-    # Base: two stepped blocks.
-    p += box(cx - hw - 2, cx + hw + 2, -0.1, 6.0, STAGE_H, STAGE_H + 7)
-    p += box(cx - hw - 1, cx + hw + 1, -0.1, 5.0, STAGE_H + 7, STAGE_H + 10)
-    # Capital: necking, echinus (45 deg flare -> printable), abacus.
-    p += box(cx - hw - 0.5, cx + hw + 0.5, -0.1, 4.6, z_top - 13, z_top - 11)
-    flare = section([(-0.1, z_top - 9), (4.6, z_top - 9), (7.0, z_top - 6.5),
-                     (7.0, z_top), (-0.1, z_top)])
-    p += extrude_yz(flare, cx - hw - 2.5, cx + hw + 2.5)
-    # Volutes on the capital (little scroll discs).
-    for sx in (-1, 1):
-        vol = extrude_xz(section(circle_pts(cx + sx * (hw + 0.5), z_top - 6.5, 2.6, 20)), 0, 7.6)
-        vol -= extrude_xz(section(circle_pts(cx + sx * (hw + 0.5), z_top - 6.5, 1.2, 16)), 7, 8)
-        p += vol
-    # Flutes.
-    flutes = []
-    for dx in (-4.2, 0, 4.2):
-        fx = cx + dx
-        groove = section([(fx - 0.9, STAGE_H + 14), (fx + 0.9, STAGE_H + 14),
-                          (fx + 0.9, z_top - 17), (fx - 0.9, z_top - 17)]).offset(
-            0.0)
-        flutes.append(extrude_xz(groove, 2.8, 5))
-        flutes.append(sphere(0.9, fx, 4.0, STAGE_H + 14, 10))
-        flutes.append(sphere(0.9, fx, 4.0, z_top - 17, 10))
-    p -= union(flutes)
-    return p
 
 
 def curtains() -> Manifold:
@@ -650,9 +619,9 @@ def balcony(sx: int) -> Manifold:
                    (x0 + 1.9, 3.7), (x1 - 1.9, 3.7)]:
         m += box(x - 1.9, x + 1.9, y - 1.9, y + 1.9, BOX_FLOOR, BOX_FLOOR + BOX_RAIL_H + 1)
         m += sphere(1.8, x, y, BOX_FLOOR + BOX_RAIL_H + 2.0, 14)
-    # Pin holes underneath.
+    # Ball pockets underneath.
     for (x, y) in _box_pin_xy():
-        m -= cyl(PIN_R, fb - 1, fb + 3.0, x, y, segments=16)
+        m -= ball_pocket(x, y, fb)
     return m if sx > 0 else mirror_x(m)
 
 
@@ -697,49 +666,6 @@ def box_doors() -> Manifold:
         d += sphere(1.0, dx - sx * 7.6, -NICHE_D + 1.0, BOX_FLOOR + 16, 10)
         out.append(d)
     return union(out)
-
-
-def dove(cx: float, cz: float, size: float, facing: int, y0: float) -> Manifold:
-    """Colette's mechanical dove, in relief on the wall face (x, z elevation).
-
-    Drawn in unit coordinates facing +x (~1.0 wide, 0.85 tall), then scaled.
-    """
-    def cs(pts):
-        return section([(cx + facing * x * size, cz + z * size) for (x, z) in pts])
-
-    body_pts = [(0.30 * math.cos(t) * math.cos(0.21) - 0.11 * math.sin(t) * math.sin(0.21),
-                 0.30 * math.cos(t) * math.sin(0.21) + 0.11 * math.sin(t) * math.cos(0.21))
-                for t in (2 * math.pi * i / 40 for i in range(40))]
-    body = (cs(body_pts) + cs(circle_pts(0.30, 0.10, 0.085, 24))
-            + cs([(0.12, 0.02), (0.28, 0.03), (0.33, 0.16), (0.18, 0.11)])
-            + cs([(0.37, 0.12), (0.47, 0.085), (0.37, 0.065)])
-            + cs([(-0.20, -0.02), (-0.52, 0.06), (-0.56, -0.02), (-0.54, -0.10),
-                  (-0.50, -0.17), (-0.20, -0.09)]))
-    wing_f_pts = [(0.08, 0.05), (0.02, 0.25), (-0.06, 0.45), (-0.20, 0.62), (-0.30, 0.66),
-                  (-0.28, 0.56), (-0.36, 0.55), (-0.32, 0.45), (-0.40, 0.42), (-0.32, 0.32),
-                  (-0.36, 0.26), (-0.24, 0.16), (-0.16, 0.04)]
-    wing_b_pts = [(0.14, 0.08), (0.20, 0.30), (0.20, 0.48), (0.14, 0.62), (0.10, 0.52),
-                  (0.06, 0.56), (0.02, 0.44), (-0.02, 0.40), (0.00, 0.20)]
-    m = extrude_xz(cs(wing_b_pts), y0, y0 + 1.6)
-    m += extrude_xz(body, y0, y0 + 2.6)
-    m += extrude_xz(cs(wing_f_pts), y0, y0 + 3.4)
-    # Feather lines on the front wing, fanning out from the wing root.
-    root = (-0.04, 0.10)
-    for tip in [(-0.27, 0.60), (-0.33, 0.50), (-0.35, 0.40), (-0.32, 0.29)]:
-        ax_, az_ = cx + facing * root[0] * size, cz + root[1] * size
-        bx_, bz_ = cx + facing * tip[0] * size, cz + tip[1] * size
-        L = math.hypot(bx_ - ax_, bz_ - az_)
-        ang = math.degrees(math.atan2(bz_ - az_, bx_ - ax_))
-        line = section([(0, -0.35), (L, -0.35), (L, 0.35), (0, 0.35)]).rotate(ang)
-        m -= extrude_xz(line.translate((ax_, az_)), y0 + 2.8, y0 + 5)
-    # Clockwork gear at the wing root, and an eye.
-    gx, gz = cx + facing * (-0.06) * size, cz + 0.10 * size
-    gear = (section(gear_pts(gx, gz, 0.075 * size, 9))
-            - section(circle_pts(gx, gz, 0.028 * size, 12)))
-    m += extrude_xz(gear, y0, y0 + 4.0)
-    ex, ez = cx + facing * 0.31 * size, cz + 0.12 * size
-    m -= extrude_xz(section(circle_pts(ex, ez, 0.022 * size, 10)), y0 + 2.0, y0 + 4)
-    return m
 
 
 def marquee() -> Manifold:
@@ -841,7 +767,7 @@ def pin_rail() -> Manifold:
 
 
 # ---------------------------------------------------------------------------
-# Joinery: slots and pin holes
+# Joinery: slots and ball pockets
 # ---------------------------------------------------------------------------
 
 
@@ -850,21 +776,10 @@ def deck_slot() -> Manifold:
                       STAGE_H + 1)
 
 
-def _pin_along(axis: str, c: tuple[float, float, float], depth: float) -> Manifold:
-    """A pin hole centred on a seam plane, `depth` mm into each side."""
-    p = Manifold.cylinder(2 * depth, PIN_R, PIN_R, 16, True)
-    if axis == "x":
-        p = p.rotate((0, 90, 0))
-    elif axis == "y":
-        p = p.rotate((90, 0, 0))
-    return p.translate(c)
-
-
 def deck_pin_holes() -> Manifold:
     z = 9.0
-    holes = [_pin_along("x", (0, y, z), 5) for y in (-95, -45, 25, 65, 100)]
-    holes += [_pin_along("y", (x, SPLIT_Y, z), 5)
-              for x in (-175, -125, -75, -30, 30, 75, 125, 175)]
+    holes = [ball_pocket(0, y, z) for y in (-95, -45, 25, 65, 100)]
+    holes += [ball_pocket(x, SPLIT_Y, z) for x in (-175, -125, -75, -30, 30, 75, 125, 175)]
     return union(holes)
 
 
@@ -875,17 +790,17 @@ def wall_pin_holes() -> Manifold:
                   (104.5, 50), (104.5, 100), (0, 172), (50, 166), (85, 165)]
     for (x, z) in front_back:
         for sx in ((-1, 1) if x else (1,)):
-            holes.append(_pin_along("y", (sx * x, SPLIT_Y, z), 4))
+            holes.append(ball_pocket(sx * x, SPLIT_Y, z))
     # Side sections <-> centre section.
     for sx in (-1, 1):
         for z in (50, 110, 168):
             for y in (SPLIT_Y / 2, SPLIT_Y * 1.5):
-                holes.append(_pin_along("x", (sx * WALL_SEAM_X, y, z), 5))
+                holes.append(ball_pocket(sx * WALL_SEAM_X, y, z))
     # Corbel tops <-> balconies.
     for sx in (-1, 1):
         for (x, y) in _box_pin_xy():
             top = BOX_FLOOR - BOX_SLAB
-            holes.append(cyl(PIN_R, top - 5, top + 1, sx * x, y, segments=16))
+            holes.append(ball_pocket(sx * x, y, top))
     return union(holes)
 
 
@@ -928,18 +843,8 @@ def build() -> tuple[Manifold, dict[str, tuple[Manifold, tuple[int, int, int]]]]
     return assembled, parts
 
 
-def to_print_orientation(m: Manifold, up: tuple[int, int, int]) -> Manifold:
-    """Rotate so `up` points to +Z, then sit the part on z = 0 at the origin."""
-    if up == UP_FRONT:
-        m = m.rotate((90, 0, 0))       # (x, y, z) -> (x, -z, y)
-    elif up == UP_BACK:
-        m = m.rotate((-90, 0, 0))      # (x, y, z) -> (x, z, -y)
-    bb = m.bounding_box()
-    return m.translate((-(bb[0] + bb[3]) / 2, -(bb[1] + bb[4]) / 2, -bb[2]))
-
-
 def main(out_dir: str = "output/star_theater") -> None:
-    from terrain.common.printcheck import check
+    from terrain.common.printcheck import check, orient
 
     assembled, parts = build()
     out = Path(out_dir)
@@ -947,7 +852,7 @@ def main(out_dir: str = "output/star_theater") -> None:
     print(f"stage_assembled  {n:7d} tris")
     print(f"{'part':20s} {'tris':>7s}  {'footprint':>13s} {'height':>6s}  overhangs")
     for name, (m, up) in parts.items():
-        pm = to_print_orientation(m, up)
+        pm = orient(m, up)
         ntri = write_stl(pm, out / "print" / f"{name}.stl", name)
         rep = check(m, up)
         ncomp = len(m.decompose())

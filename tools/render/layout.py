@@ -19,6 +19,7 @@ def read_stl(path):
 
 
 def main(src_dir, out, cols=4, gap=25.0):
+    cols, gap = int(cols), float(gap)
     files = sorted(Path(src_dir).glob("*.stl"))
     placed, x, y, row_h, col = [], 0.0, 0.0, 0.0, 0
     for f in files:
@@ -31,7 +32,6 @@ def main(src_dir, out, cols=4, gap=25.0):
         col += 1
         if col == cols:
             x, y, row_h, col = 0.0, y - row_h - gap, 0.0, 0
-            y = y  # rows go toward -y
     write_stl(union(placed), out, "layout")
 
 

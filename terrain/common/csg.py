@@ -229,3 +229,18 @@ def write_stl(m: Manifold, path: str | Path, name: str = "model") -> int:
         f.write(struct.pack("<I", len(tris)))
         f.write(rec.tobytes())
     return len(tris)
+
+
+# ---------------------------------------------------------------------------
+# Joinery
+# ---------------------------------------------------------------------------
+
+# Alignment balls: .177 cal copper-plated steel airgun BBs (nominally 4.5 mm,
+# real ones run ~4.35-4.5 mm). Each mating face gets a hemispherical pocket.
+BALL_D = 4.5
+BALL_CLEARANCE = 0.2   # added to the pocket diameter
+
+
+def ball_pocket(x: float, y: float, z: float) -> Manifold:
+    """A sphere centred on a seam: subtracting it leaves a half-pocket on each side."""
+    return sphere((BALL_D + BALL_CLEARANCE) / 2, x, y, z, 28)
