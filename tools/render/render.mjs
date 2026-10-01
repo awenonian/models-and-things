@@ -28,6 +28,9 @@ const VIEWS = {
   s_back:   { eye: [380, 650, 330], target: [0, 150, 30] },
   scene:    { eye: [-620, 900, 520], target: [0, 260, 40], fov: 38 },
   scene2:   { eye: [560, -420, 420], target: [0, 280, 40], fov: 38 },
+  s_bal:    { eye: [-150, 90, 170], target: [-20, 215, 90], fov: 40 },
+  s_under:  { eye: [70, 110, 60], target: [20, 225, 60], fov: 45 },
+  pit:      { eye: [-170, 290, 110], target: [-40, 130, 15], fov: 40 },
   plate:    { eye: [394, -820, 620], target: [394, -110, 0], fov: 38 },
   dove:     { eye: [-40, 120, 120], target: [-88, 0, 158], fov: 30 },
 };

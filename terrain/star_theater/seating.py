@@ -1,9 +1,10 @@
 """The Star Theater -- seating piece (part two).
 
 The house side of Colette Du Bois' theater, built to face the stage piece
-across the table: an orchestra pit along the front edge, four curved, raked
-rows of velvet chairs with a centre aisle and side aisles, a tiled promenade at
-the back and the auditorium's back wall with doors out to the lobby.
+across the table: eight curved, raked rows of velvet chairs with a cross aisle
+in front, a centre aisle and side aisles, a tiled promenade at the back, and
+over the promenade a small balcony on cast-iron columns, against the
+auditorium's back wall.
 
 Run from the repo root:
     python -m terrain.star_theater.seating
@@ -16,14 +17,15 @@ Coordinates follow the stage piece: +Y points away from the stage, so this
 piece's front edge (the pit) is at y = 0 and its back wall at the far end.
 Left/right are as seen from the audience (+x is the audience's left).
 
-Rows give ~33 mm of standing room in front of each line of chairs, so 30 mm
-bases fit between rows; aisles are 44 mm (centre) and 32 mm (sides).
+The rows are close-packed (17 mm pitch): models stand on the chairs, which
+count as difficult terrain that gives cover. The aisles stay wide (44 mm centre,
+32 mm sides) as the fast way forward. The balcony is a separate part resting on
+BBs, so it lifts off if you leave it unglued.
 """
 
 from __future__ import annotations
 
 import math
-import random
 import sys
 from pathlib import Path
 
@@ -40,33 +42,46 @@ from terrain.star_theater.ornament import pilaster
 # ---------------------------------------------------------------------------
 
 HALF_W = 200.0
-FLOOR = 8.0             # pit / front-row floor (the base plate thickness)
-RISE = 6.0              # each row steps up this much
-N_ROWS = 4
-ROW_D = 46.0            # row depth: ~13 mm of chair + ~33 mm standing room
+FLOOR = 8.0             # front cross-aisle floor (the base plate thickness)
+RISE = 3.0              # each row steps up this much
+N_ROWS = 8
+ROW_D = 17.0            # row pitch: chairs are 12 mm deep, ~5 mm between rows
 CENTER_Y = -900.0       # rows are arcs centred here, i.e. behind the stage
-PIT_RAIL_R = (955.0, 958.0)
-ROW1_R = 960.0          # front edge of row 1 (y = 60 on the centre line)
+ROW1_R = 950.0          # front edge of row 1 (y = 50 on the centre line)
 PROM_R = ROW1_R + N_ROWS * ROW_D
 PROM_Z = FLOOR + N_ROWS * RISE
 WALL_T = 12.0
-WALL_Y = 292.0          # front face of the back wall
+WALL_Y = 240.0          # front face of the back wall
 BACK_Y = WALL_Y + WALL_T
-WALL_H = 96.0           # wall body height above the promenade
+WALL_H = 123.0          # wall body height above the promenade
 AISLE_HW = 22.0         # centre aisle half-width
 SIDE_AISLE_X = 168.0    # side aisles run from here to the edge
 SEAT_PITCH = 11.0
 
+# Balcony: over the promenade, resting on four columns and a wall ledge.
+BAL_HW = 105.0
+BAL_UNDER = PROM_Z + 52.0          # underside (52 mm of headroom below)
+BAL_SLAB = 8.0
+BAL_FLOOR = BAL_UNDER + BAL_SLAB   # front-row floor
+BAL_STEP = 6.0                     # second row is raised this much
+BAL_DEPTH = 46.0                   # wall to the balcony's front at its ends
+BAL_BOW = 8.0                      # extra bulge at the centre
+BAL_AISLE_HW = 16.0
+COLUMN_X = (45.0, 95.0)
+
 # Print layout: base split down the centre aisle and along the front edge of
-# row 3 (the seam hides at the foot of a riser); wall split beside the centre
-# pilasters. Joinery as on the stage: steel BB pockets + wall tenon in a slot.
-SEAM_R = ROW1_R + 2 * ROW_D
+# row 5 (the seam hides at the foot of a riser); wall split beside the centre
+# pilasters; balcony printed flat as one part. Joinery as on the stage: steel
+# BB pockets + wall tenon in a slot.
+SEAM_R = ROW1_R + 4 * ROW_D
 WALL_SEAM_X = 42.0
 TENON = 2.0
 SLOT_CLEAR = 0.2
 
-DOOR_C_HW, DOOR_C_SPRING = 20.0, 38.0     # centre double door: 40 x 58
+DOOR_C_HW, DOOR_C_SPRING = 18.0, 26.0     # centre double door: 36 x 44
 DOOR_S_X, DOOR_S_HW, DOOR_S_SPRING = 182.0, 15.0, 35.0   # side doors: 30 x 50
+DOOR_B_HW = 15.0                          # balcony door: 30 x 45
+PILASTERS = ((32.0, 6.0), (111.0, 5.0))   # (x, half-width), mirrored
 
 
 def mirror_x(m: Manifold) -> Manifold:
@@ -128,42 +143,36 @@ def build_floor() -> Manifold:
         m += extrude_xy(beyond(row_r(k)), row_z(k - 1), row_z(k))
     # Brass nosing along each riser (0.8 mm lip: prints fine).
     for k in range(2, N_ROWS + 2):
-        m += extrude_xy(band(row_r(k) - 0.8, row_r(k) + 1.5), row_z(k) - 1.0, row_z(k))
-    # Plinth along the outside edges.
+        m += extrude_xy(band(row_r(k) - 0.8, row_r(k) + 1.5), row_z(k) - 0.8, row_z(k))
     m -= floor_grooves()
     m += carpet_runner()
-    m += pit_rail()
-    m += pit_props()
     for k in range(1, N_ROWS + 1):
         m += chair_row(k)
+    for x in COLUMN_X:
+        for sx in (-1, 1):
+            m += column(sx * x)
     return m
 
 
 def floor_grooves() -> Manifold:
-    """Pit planks, and a diamond-tiled promenade."""
-    rng = random.Random(1858)
+    """A diamond-tiled promenade (and the cross aisle in front of row 1)."""
     cuts = []
-    pit = section(arc_pts(PIT_RAIL_R[0]) + [(HALF_W, -1), (-HALF_W, -1)])
-    lines = []
-    for k in range(-16, 17):
-        x = k * 12.0
-        lines.append(box(x - 0.4, x + 0.4, -5, 80, FLOOR - 0.6, FLOOR + 1))
-        y = rng.uniform(5, 40)
-        while y < 70:
-            lines.append(box(x, x + 12, y - 0.4, y + 0.4, FLOOR - 0.6, FLOOR + 1))
-            y += rng.uniform(40, 70)
-    cuts.append(union(lines) ^ extrude_xy(pit, 0, 50))
     # Promenade tiles: two families of 45-degree grooves.
     tiles = []
     step = 14.0
     for k in range(-40, 40):
         for sgn in (1, -1):
             g = box(-300, 300, -0.4, 0.4, PROM_Z - 0.6, PROM_Z + 1).rotate((0, 0, 45 * sgn))
-            tiles.append(g.translate((0, 260 + k * step, 0)))
+            tiles.append(g.translate((0, 200 + k * step, 0)))
     prom = beyond(row_r(N_ROWS + 1) + 3) ^ section([(-500, 0), (500, 0), (500, WALL_Y),
                                                      (-500, WALL_Y)])
     prom = prom.offset(-1.5) - section([(-17, 0), (17, 0), (17, 400), (-17, 400)])  # not under the runner
     cuts.append(union(tiles) ^ extrude_xy(prom, 0, 100))
+    # Cross aisle: same tiles, at floor level.
+    front = (base_plan() - beyond(ROW1_R - 3)).offset(-1.5) - section(
+        [(-17, -10), (17, -10), (17, 400), (-17, 400)])
+    front_tiles = union(t.translate((0, 0, FLOOR - PROM_Z)) for t in tiles)
+    cuts.append(front_tiles ^ extrude_xy(front, 0, 100))
     return union(cuts)
 
 
@@ -172,28 +181,12 @@ def carpet_runner() -> Manifold:
     parts = []
     strip = section([(-16, 0), (16, 0), (16, WALL_Y), (-16, WALL_Y)])
     for k in range(1, N_ROWS + 2):
-        r0 = PIT_RAIL_R[1] if k == 1 else row_r(k) + 1.5
+        r0 = 0.0 if k == 1 else row_r(k) + 1.5
         r1 = row_r(k + 1) - 0.8 if k <= N_ROWS else 5000
-        region = (beyond(r0) - beyond(r1)) ^ strip if k <= N_ROWS else beyond(r0) ^ strip
+        lo = base_plan() if k == 1 else beyond(r0)
+        region = (lo - beyond(r1)) ^ strip if k <= N_ROWS else lo ^ strip
         parts.append(extrude_xy(region, row_z(k) - 0.1, row_z(k) + 0.5))
         parts.append(extrude_xy(ring(region, 0, -1.4), row_z(k) + 0.4, row_z(k) + 0.8))
-    return union(parts)
-
-
-def pit_rail() -> Manifold:
-    """Curved rail between the pit and row 1, gaps at the aisles."""
-    r0, r1 = PIT_RAIL_R
-    parts = []
-    for (xa, xb) in ((AISLE_HW + 1, SIDE_AISLE_X), (-SIDE_AISLE_X, -AISLE_HW - 1)):
-        parts.append(extrude_xy(band(r0, r1, xa, xb), FLOOR - 0.1, FLOOR + 13))
-        parts.append(extrude_xy(band(r0 - 0.8, r1 + 0.8, xa, xb), FLOOR + 13, FLOOR + 14.5))
-        n = 5
-        for i in range(n + 1):
-            x = xa + (xb - xa) * i / n
-            x = min(max(x, xa + 2), xb - 2)
-            y = arc_y((r0 + r1) / 2, x)
-            parts.append(box(x - 2, x + 2, y - 2.3, y + 2.3, FLOOR - 0.1, FLOOR + 15.5))
-            parts.append(sphere(1.9, x, y, FLOOR + 17.0, 14))
     return union(parts)
 
 
@@ -258,78 +251,6 @@ def chair_row(k: int) -> Manifold:
 
 
 # ---------------------------------------------------------------------------
-# Orchestra pit
-# ---------------------------------------------------------------------------
-
-
-def piano() -> Manifold:
-    """Upright piano, keyboard toward +y, origin centre-bottom."""
-    m = box(-14, 14, -6, 6, 0, 22)
-    m += box(-14.6, 14.6, -6.6, 6.6, 21, 23)                 # lid
-    m += box(-15, 15, -6.4, 6.4, 0, 2)                       # plinth
-    # Keyboard shelf with a 45-degree cheek underneath (no overhang).
-    m += extrude_yz(section([(6, 5), (11, 10), (11, 11.6), (6, 11.6)]), -13, 13)
-    for i in range(-5, 6):
-        if i in (-2, 1, 4):
-            continue
-        m += box(i * 2.2 - 0.5, i * 2.2 + 0.5, 6.5, 9.5, 11.6, 12.3)  # black keys
-    m += extrude_yz(section([(6, 12), (8.2, 17.5), (7.4, 17.8), (6, 14)]), -9, 9)  # music rack
-    # Panels on the front board.
-    for x in (-7, 7):
-        m -= box(x - 5, x + 5, 5.4, 6.4, 13.5, 20)
-    # Candelabra on top.
-    m += cyl(0.6, 23, 27, -9, 0, segments=10)
-    m += box(-12, -6, -0.5, 0.5, 26.5, 27.3)
-    for x in (-12, -9, -6):
-        m += cyl(0.8, 27, 29.5, x, 0, segments=10)
-    return m
-
-
-def music_stand() -> Manifold:
-    """Stand facing +y, origin on the floor."""
-    m = cyl(3.0, 0, 1.0, segments=20) + cyl(0.75, 0, 14, segments=10)
-    desk = box(-5.5, 5.5, -0.5, 0.5, 0, 8).rotate((-30, 0, 0)).translate((0, 0.6, 13.0))
-    lip = box(-5.5, 5.5, -0.2, 1.8, -0.9, 0).rotate((-30, 0, 0)).translate((0, 0.6, 13.0))
-    return m + desk + lip
-
-
-def stool() -> Manifold:
-    return cyl(3.6, 0, 6.5, segments=20) + cyl(4.0, 6.5, 7.6, segments=20)
-
-
-def podium() -> Manifold:
-    oct_ = section([(9 * math.cos(math.pi / 8 + i * math.pi / 4),
-                     9 * math.sin(math.pi / 8 + i * math.pi / 4)) for i in range(8)])
-    m = extrude_xy(oct_, 0, 3.5) + extrude_xy(oct_.offset(-1.2), 3.5, 4.2)
-    m += music_stand().rotate((0, 0, 180)).translate((0, -5.5, 4.2))
-    return m
-
-
-def drum() -> Manifold:
-    m = cyl(6.5, 0, 9, segments=32)
-    m += cyl(7.0, 0, 1.2, segments=32) + cyl(7.0, 7.8, 9.0, segments=32)
-    for i in range(8):
-        a = i * math.pi / 4
-        m += box(-0.5, 0.5, -0.5, 0.5, 1.2, 7.8).translate((6.6 * math.cos(a), 6.6 * math.sin(a), 0))
-    return m
-
-
-def pit_props() -> Manifold:
-    z = FLOOR
-    parts = [
-        piano().rotate((0, 0, 180)).translate((-118, 22, z)),
-        stool().translate((-118, 8, z)),
-        podium().translate((0, 26, z)),
-        drum().translate((140, 20, z)),
-    ]
-    for (x, y, rot) in ((-62, 28, 10), (-28, 40, 0), (36, 40, 0), (70, 28, -10), (104, 36, -15)):
-        parts.append(music_stand().rotate((0, 0, 180 + rot)).translate((x, y, z)))
-        dx, dy = 9 * math.sin(math.radians(rot)), 9 * math.cos(math.radians(rot))
-        parts.append(stool().translate((x - dx, y - dy, z)))
-    return union(parts)
-
-
-# ---------------------------------------------------------------------------
 # Back wall (built in the 'stage frame': face at y = 0 facing +y, then turned
 # round to face the stage)
 # ---------------------------------------------------------------------------
@@ -345,9 +266,9 @@ def _above_prom() -> CrossSection:
     return section([(-500, PROM_Z), (500, PROM_Z), (500, 1000), (-500, 1000)])
 
 
-def poster(cx: float, lines: list[tuple[str, float]]) -> Manifold:
+def poster(cx: float, lines: list[tuple[str, float]], hw: float = 22.0) -> Manifold:
     """A framed playbill with lettering, in relief."""
-    z0, z1, hw = PROM_Z + 30, PROM_Z + 88, 22.0
+    z0, z1 = PROM_Z + 30, PROM_Z + 88
     board = section([(cx - hw, z0), (cx + hw, z0), (cx + hw, z1), (cx - hw, z1)])
     m = extrude_xz(board, -0.1, 1.2)
     m += extrude_xz(ring(board, 2.0, 0), -0.1, 2.6)
@@ -408,27 +329,33 @@ def back_wall_local() -> Manifold:
     for d in doors:
         w += extrude_xz(ring(d, 4.5, 0) ^ clip, 0, 2.2)
         w += extrude_xz(ring(d, 3.0, 1.2) ^ clip, 0, 3.4)
-    # Pediment over the centre doors, with a star in the tympanum.
-    pz = PROM_Z + DOOR_C_SPRING + DOOR_C_HW + 6
-    ped = section([(-34, pz), (34, pz), (0, pz + 17)])
-    w += extrude_xz(section([(-36, pz - 2.5), (36, pz - 2.5), (36, pz), (-36, pz)]), 0, 5.0)
-    w += extrude_xz(ring(ped, 0, -2.4), 0, 5.0)
-    w += extrude_xz(ped, 0, 2.5)
-    w += extrude_xz(section(star_pts(0, pz + 6, 4.6)), 0, 4.2)
+    # Ledge carrying the back of the balcony (45-degree underside).
+    w += extrude_yz(section([(0, BAL_UNDER - 12), (6, BAL_UNDER - 6), (6, BAL_UNDER),
+                             (0, BAL_UNDER)]), -BAL_HW, BAL_HW)
+    # Balcony door, opening off the balcony's back walkway.
+    bz = BAL_FLOOR + BAL_STEP
+    bdoor = section([(-DOOR_B_HW, bz), (DOOR_B_HW, bz)] + circle_pts(0, bz + 30, DOOR_B_HW, 32, 0, 180))
+    bclip = section([(-500, bz), (500, bz), (500, 1000), (-500, 1000)])
+    w += extrude_xz(ring(bdoor, 4.5, 0) ^ bclip, 0, 2.2)
+    w += extrude_xz(ring(bdoor, 3.0, 1.2) ^ bclip, 0, 3.4)
+    w += extrude_xz(section(star_pts(0, bz + 49, 4.0)), 0, 3.6)
     # Pilasters.
-    for sx in (-1, 1):
-        w += pilaster(sx * 32.0, PROM_Z, top, hw=6.0)
-        w += pilaster(sx * 156.0, PROM_Z, top, hw=6.0)
-    # Playbills and gas sconces.
-    w += poster(-93.0, [("COLETTE", 7.0), ("DU BOIS", 5.0), ("*", 0), ("STAR OF", 4.2),
-                        ("THE SHOW", 4.2)])
-    w += poster(93.0, [("THE", 4.2), ("MECHANICAL", 5.0), ("DOVES", 7.0), ("*", 0),
-                       ("NIGHTLY", 4.2)])
-    for cx in (-127, -59, 59, 127):
-        w += sconce(cx, PROM_Z + 68)
+    for (x, hw) in PILASTERS:
+        for sx in (-1, 1):
+            w += pilaster(sx * x, PROM_Z, top, hw=hw)
+    # Playbills (outside the balcony) and gas sconces (under it and above it).
+    w += poster(-139.0, [("COLETTE", 7.0), ("DU BOIS", 5.0), ("*", 0), ("STAR OF", 4.2),
+                         ("THE SHOW", 4.2)], hw=20.0)
+    w += poster(139.0, [("THE", 4.2), ("MECHANICAL", 5.0), ("DOVES", 7.0), ("*", 0),
+                        ("NIGHTLY", 4.2)], hw=20.0)
+    for cx in (-70, 70):
+        w += sconce(cx, PROM_Z + 34)
+    for cx in (-50, 50):
+        w += sconce(cx, bz + 30)
     # Cut the doorways, and trim anything poking past the wall ends.
     for d in doors:
         w -= extrude_xz(d ^ clip, -40, 40)
+    w -= extrude_xz(bdoor, -40, 40)
     w ^= box(-HALF_W, HALF_W, -WALL_T, 50, 0, 500)
     # Tenon under the solid runs.
     runs = [(-HALF_W, -DOOR_S_X - DOOR_S_HW), (-DOOR_S_X + DOOR_S_HW, -DOOR_C_HW),
@@ -450,19 +377,125 @@ def tenon_plan_world() -> CrossSection:
 
 
 # ---------------------------------------------------------------------------
+# Balcony and its columns
+# ---------------------------------------------------------------------------
+
+
+def bal_front(x: float) -> float:
+    """y of the balcony's bowed front edge."""
+    return WALL_Y - BAL_DEPTH - BAL_BOW * (1 - (x / BAL_HW) ** 2)
+
+
+def _bal_slope(x: float) -> float:
+    return 2 * BAL_BOW * x / BAL_HW ** 2
+
+
+def _behind_front(off: float, y_back: float = WALL_Y - 0.2, n: int = 60) -> CrossSection:
+    xs = [-BAL_HW + 2 * BAL_HW * i / n for i in range(n + 1)]
+    return section([(x, bal_front(x) + off) for x in xs] + [(BAL_HW, y_back), (-BAL_HW, y_back)])
+
+
+def _front_band(inner: float, outer: float, n: int = 60) -> CrossSection:
+    xs = [-BAL_HW + 2 * BAL_HW * i / n for i in range(n + 1)]
+    return section([(x, bal_front(x) - outer) for x in xs]
+                   + [(x, bal_front(x) + inner) for x in reversed(xs)])
+
+
+def column_xy() -> list[tuple[float, float]]:
+    return [(sx * x, bal_front(x) + 6.0) for x in COLUMN_X for sx in (-1, 1)]
+
+
+def column(cx: float) -> Manifold:
+    """Cast-iron column from the promenade up to the balcony's underside."""
+    cy = bal_front(abs(cx)) + 6.0
+    z0, z1 = PROM_Z, BAL_UNDER
+    m = box(cx - 3.5, cx + 3.5, cy - 3.5, cy + 3.5, z0 - 0.1, z0 + 3)
+    m += box(cx - 3.0, cx + 3.0, cy - 3.0, cy + 3.0, z0 + 3, z0 + 4)
+    m += cyl(2.3, z0 + 4, z1 - 7, cx, cy, segments=24)
+    m += cyl(2.8, z0 + 4, z0 + 5.2, cx, cy, segments=24)
+    m += cyl(2.8, z1 - 9, z1 - 7.8, cx, cy, segments=24)
+    # Capital: square flare at 45 degrees up to a 9 mm abacus.
+    flare = (box(cx - 2.5, cx + 2.5, cy - 2.5, cy + 2.5, z1 - 7.1, z1 - 7) +
+             box(cx - 4.5, cx + 4.5, cy - 4.5, cy + 4.5, z1 - 5.0, z1 - 4.9)).hull()
+    m += flare + box(cx - 4.5, cx + 4.5, cy - 4.5, cy + 4.5, z1 - 5.0, z1)
+    return m
+
+
+def balcony() -> Manifold:
+    """Two bowed rows of chairs over the promenade. Printed flat on its underside."""
+    z0, z1 = BAL_UNDER, BAL_FLOOR
+    zb = z1 + BAL_STEP
+    m = extrude_xy(_behind_front(0), z0, z1)
+    m += extrude_xy(_front_band(0, 0.8), z1 - 1.6, z1)                 # lip on the fascia
+    m += extrude_xy(_behind_front(22), z1 - 0.1, zb)                    # raised back row
+    m += extrude_xy(_behind_front(21.2) - _behind_front(23.5), zb - 0.8, zb)    # nosing
+    # Stars along the fascia.
+    for x in (-75, -45, -15, 15, 45, 75):
+        y = bal_front(x)
+        m += extrude_xz(section(star_pts(x, (z0 + z1) / 2 - 0.6, 2.8)), y - 1.0, y + 1.0)
+    # Bowed parapet with posts, ball finials and stars.
+    ph = 14.0
+    m += extrude_xy(_front_band(3.0, 0.0), z1 - 0.1, z1 + ph)
+    m += extrude_xy(_front_band(3.8, 0.8), z1 + ph, z1 + ph + 1.5)
+    posts = [-BAL_HW + 2.5, -70, -35, 0, 35, 70, BAL_HW - 2.5]
+    for x in posts:
+        y = bal_front(x) + 1.5
+        m += box(x - 2.4, x + 2.4, y - 2.4, y + 2.4, z1 - 0.1, z1 + ph + 2.5)
+        m += sphere(2.0, x, y, z1 + ph + 4.0, 14)
+    for a, b in zip(posts[:-1], posts[1:]):
+        x = (a + b) / 2
+        y = bal_front(x)
+        m += extrude_xz(section(star_pts(x, z1 + ph / 2, 3.4)), y - 0.8, y + 1.0)
+    # Side parapets.
+    yb0, yb1 = bal_front(BAL_HW), WALL_Y - 0.2
+    for sx in (-1, 1):
+        xo, xi = sx * BAL_HW, sx * (BAL_HW - 3)
+        m += box(xi, xo, yb0, yb1, z1 - 0.1, zb + ph)
+        m += box(xi - sx * 0.8, xo + sx * 0.8, yb0, yb1, zb + ph, zb + ph + 1.5)
+    # Chairs, following the bow, either side of the aisle.
+    c, std = chair(), end_standard()
+    for off, zr in ((5.0, z1), (24.0, zb)):
+        half = []
+        x_in, x_out = BAL_AISLE_HW + 1.5, BAL_HW - 4.5
+        n = int((x_out - x_in) // SEAT_PITCH)
+        xs = [(x_in + x_out) / 2 + (i - (n - 1) / 2) * SEAT_PITCH for i in range(n)]
+        for x in xs:
+            a = math.degrees(math.atan(_bal_slope(x)))
+            half.append(c.rotate((0, 0, a)).translate((x, bal_front(x) + off, zr)))
+        for x in (xs[0] - SEAT_PITCH / 2 - 0.9, xs[-1] + SEAT_PITCH / 2 + 0.9):
+            a = math.degrees(math.atan(_bal_slope(x)))
+            half.append(std.rotate((0, 0, a)).translate((x, bal_front(x) + off, zr)))
+        h = union(half)
+        m += h + mirror_x(h)
+    # Clearance round the wall's pilasters, and BB pockets underneath.
+    for (x, hw) in PILASTERS:
+        for sx in (-1, 1):
+            m -= box(sx * x - hw - 3.0, sx * x + hw + 3.0, WALL_Y - 8.0, WALL_Y + 1, 0, 500)
+    for (x, y) in _bal_pocket_xy():
+        m -= ball_pocket(x, y, z0)
+    return m
+
+
+def _bal_pocket_xy() -> list[tuple[float, float]]:
+    return column_xy() + [(sx * x, WALL_Y - 3.0) for x in (20.0, 75.0) for sx in (-1, 1)]
+
+
+# ---------------------------------------------------------------------------
 # Joinery
 # ---------------------------------------------------------------------------
 
 
 def floor_pockets() -> Manifold:
-    holes = [ball_pocket(0, y, 4.0) for y in (25, 95, 200, 265)]
+    holes = [ball_pocket(0, y, 4.0) for y in (25, 95, 160, 220)]
     for x in (-150, -95, -45, 45, 95, 150):
         holes.append(ball_pocket(x, arc_y(SEAM_R, x), 4.0))
     return union(holes)
 
 
 def wall_pockets_local() -> Manifold:
-    holes = []
+    # Balcony seats on the ledge (pockets in the ledge top; local frame).
+    holes = [ball_pocket(-x, WALL_Y - y, BAL_UNDER) for (x, y) in _bal_pocket_xy()
+             if y > WALL_Y - 5]
     for sx in (-1, 1):
         for z in (PROM_Z + 20, PROM_Z + 72):
             holes.append(ball_pocket(sx * WALL_SEAM_X, -WALL_T / 2, z))
@@ -481,6 +514,8 @@ def build() -> tuple[Manifold, dict[str, tuple[Manifold, tuple[int, int, int]]]]
     floor -= extrude_xy(tenon_plan_world().offset(SLOT_CLEAR), PROM_Z - TENON - SLOT_CLEAR,
                         PROM_Z + 1)
     floor -= floor_pockets()
+    for (x, y) in column_xy():
+        floor -= ball_pocket(x, y, BAL_UNDER)
     wall = to_world(back_wall_local() - wall_pockets_local())
 
     big = 2000.0
@@ -495,7 +530,9 @@ def build() -> tuple[Manifold, dict[str, tuple[Manifold, tuple[int, int, int]]]]
     for lr, (x0, x1) in (("left", (WALL_SEAM_X, big)), ("centre", (-WALL_SEAM_X, WALL_SEAM_X)),
                          ("right", (-big, -WALL_SEAM_X))):
         parts[f"seating_wall_{lr}"] = (wall ^ box(x0, x1, -big, big, -1, 500), UP_FACE)
-    return floor + wall, parts
+    bal = balcony()
+    parts["seating_balcony"] = (bal, UP_Z)
+    return floor + wall + bal, parts
 
 
 def main(out_dir: str = "output/star_theater") -> None:

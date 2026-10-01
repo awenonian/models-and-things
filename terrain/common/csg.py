@@ -88,11 +88,15 @@ def _signed_area(arr: np.ndarray) -> float:
 
 def extrude_xy(cs: CrossSection, z0: float, z1: float) -> Manifold:
     """Plan-view shape (x, y) extruded upward from z0 to z1."""
+    if cs.is_empty():
+        return Manifold()
     return Manifold.extrude(cs, z1 - z0).translate((0, 0, z0))
 
 
 def extrude_xz(cs: CrossSection, y0: float, y1: float) -> Manifold:
     """Front-elevation shape (x, z) extruded along Y from y0 to y1."""
+    if cs.is_empty():
+        return Manifold()
     ya, yb = sorted((y0, y1))
     m = Manifold.extrude(cs, yb - ya)
     # (a, b, c) -> (a, -c, b): a proper rotation, keeps normals outward.
@@ -102,6 +106,8 @@ def extrude_xz(cs: CrossSection, y0: float, y1: float) -> Manifold:
 
 def extrude_yz(cs: CrossSection, x0: float, x1: float) -> Manifold:
     """Side-elevation profile (y, z) extruded along X from x0 to x1."""
+    if cs.is_empty():
+        return Manifold()
     xa, xb = sorted((x0, x1))
     m = Manifold.extrude(cs, xb - xa)
     # (a, b, c) -> (c, a, b): cyclic permutation, a proper rotation.

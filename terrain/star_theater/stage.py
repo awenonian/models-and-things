@@ -1,7 +1,8 @@
 """The Star Theater -- stage piece.
 
 Colette Du Bois' theater in Malifaux: a ritzy proscenium stage with a curved
-apron out front, a proscenium wall standing across the middle of the base, and
+apron and an orchestra pit out front, a proscenium wall standing across the
+middle of the base, and
 a backstage area behind it. Two side doors and the main arch let models move
 between front-of-house and backstage.
 
@@ -33,6 +34,7 @@ from terrain.common.csg import (
     text_section, union, write_stl,
 )
 from terrain.star_theater.ornament import dove, pilaster
+from terrain.star_theater.props import drum, music_stand, piano, podium, stool
 
 # ---------------------------------------------------------------------------
 # Key dimensions (mm)
@@ -76,6 +78,11 @@ SPLIT_Y = -WALL_T / 2
 WALL_SEAM_X = OPEN_HW + 9.0
 TENON = 2.0
 SLOT_CLEAR = 0.2
+
+PIT_D = 55.0            # orchestra pit: depth in front of the apron
+PIT_HW = 146.0          # half-width (stops just short of the corner stairs)
+PIT_FLOOR = 6.0         # pit floor height (the pit's base plate)
+PIT_GATE = (118.0, 140.0)   # gaps in the pit rail, both sides
 
 PLANK_W = 12.0
 GROOVE_W, GROOVE_D = 0.8, 0.6
@@ -290,6 +297,83 @@ def footlights() -> Manifold:
         ang = math.degrees(math.atan2(x, y - (APRON_MID_Y - r) + 5.5))
         parts.append(unit.rotate((0, 0, -ang)).translate((x, y, STAGE_H + 0.6)))
     return union(parts)
+
+
+# ---------------------------------------------------------------------------
+# Orchestra pit (in front of the apron, part of the front deck pieces)
+# ---------------------------------------------------------------------------
+
+
+def _pit_front(x: float) -> float:
+    return apron_y_at(x) + PIT_D
+
+
+def pit_plan() -> CrossSection:
+    n = 80
+    xs = [-PIT_HW + 2 * PIT_HW * i / n for i in range(n + 1)]
+    front = [(x, _pit_front(x)) for x in xs]
+    back = [(x, apron_y_at(x) - 1.0) for x in reversed(xs)]
+    return section(front + back)
+
+
+def _rail_band(x0: float, x1: float, inner: float, outer: float) -> CrossSection:
+    n = 30
+    xs = [x0 + (x1 - x0) * i / n for i in range(n + 1)]
+    return section([(x, _pit_front(x) + outer) for x in xs]
+                   + [(x, _pit_front(x) - inner) for x in reversed(xs)])
+
+
+def build_pit() -> Manifold:
+    """Sunken pit: plank floor, rail with gates near each end, the band's kit."""
+    z = PIT_FLOOR
+    m = extrude_xy(pit_plan(), 0, z)
+    # Planks running toward the audience, with staggered butt joints.
+    rng = random.Random(1859)
+    cuts = []
+    n = int(PIT_HW // PLANK_W)
+    for k in range(-n, n + 1):
+        x = k * PLANK_W
+        cuts.append(box(x - GROOVE_W / 2, x + GROOVE_W / 2, 60, 200, z - GROOVE_D, z + 1))
+        y = 80 + rng.uniform(5, 40)
+        while y < 170:
+            cuts.append(box(x, x + PLANK_W, y - GROOVE_W / 2, y + GROOVE_W / 2, z - GROOVE_D, z + 1))
+            y += rng.uniform(35, 60)
+    m -= union(cuts) ^ extrude_xy(pit_plan().offset(-1.0), 0, 50)
+    # Front rail (gaps for the gates) and the two end rails.
+    parts = []
+    runs = [(-PIT_HW, -PIT_GATE[1]), (-PIT_GATE[0], PIT_GATE[0]), (PIT_GATE[1], PIT_HW)]
+    for x0, x1 in runs:
+        parts.append(extrude_xy(_rail_band(x0, x1, 3.0, 0.0), z - 0.1, z + 13))
+        parts.append(extrude_xy(_rail_band(x0, x1, 3.8, 0.8), z + 13, z + 14.5))
+        for i in range(max(2, int((x1 - x0) // 40) + 1)):
+            k = max(2, int((x1 - x0) // 40) + 1)
+            x = x0 + 2 + (x1 - x0 - 4) * i / (k - 1)
+            y = _pit_front(x) - 1.5
+            parts.append(box(x - 2, x + 2, y - 2.3, y + 2.3, z - 0.1, z + 15.5))
+            parts.append(sphere(1.9, x, y, z + 17.0, 14))
+    for sx in (-1, 1):
+        x_out = sx * PIT_HW
+        x_in = sx * (PIT_HW - 3)
+        y0, y1 = apron_y_at(PIT_HW) - 1, _pit_front(PIT_HW)
+        parts.append(box(x_in, x_out, y0, y1, z - 0.1, z + 13))
+        parts.append(box(x_in - sx * 0.8, x_out + sx * 0.8, y0, y1 + 0.8, z + 13, z + 14.5))
+    m += union(parts)
+    # The band.
+    def at(x, off):
+        return (x, apron_y_at(x) + off)
+    kit = [
+        piano().rotate((0, 0, 180)).translate((*at(-88, 22), z)),
+        stool().translate((*at(-88, 8), z)),
+        podium().rotate((0, 0, 180)).translate((*at(0, 38), z)),
+        drum().translate((*at(104, 16), z)),
+    ]
+    for (x, off, rot) in ((-46, 30, 4), (32, 33, 0), (62, 27, -6), (-110, 22, 10)):
+        kit.append(music_stand().rotate((0, 0, 180 + rot)).translate((*at(x, off), z)))
+        dx, dy = 9 * math.sin(math.radians(rot)), 9 * math.cos(math.radians(rot))
+        px, py = at(x, off)
+        kit.append(stool().translate((px - dx, py - dy, z)))
+    m += union(kit)
+    return m
 
 
 # ---------------------------------------------------------------------------
@@ -779,6 +863,7 @@ def deck_slot() -> Manifold:
 def deck_pin_holes() -> Manifold:
     z = 9.0
     holes = [ball_pocket(0, y, z) for y in (-95, -45, 25, 65, 100)]
+    holes.append(ball_pocket(0, apron_y_at(0) + PIT_D / 2, PIT_FLOOR / 2))
     holes += [ball_pocket(x, SPLIT_Y, z) for x in (-175, -125, -75, -30, 30, 75, 125, 175)]
     return union(holes)
 
@@ -817,7 +902,7 @@ def build() -> tuple[Manifold, dict[str, tuple[Manifold, tuple[int, int, int]]]]
     Left/right are as seen from the audience (+x is on the audience's left).
     """
     t0 = time.time()
-    platform = build_platform() + backstage_props()
+    platform = build_platform() + backstage_props() + build_pit()
     platform = platform - deck_slot() - deck_pin_holes()
     print(f"  platform built in {time.time() - t0:.1f}s", file=sys.stderr)
     t0 = time.time()

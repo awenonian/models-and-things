@@ -13,8 +13,9 @@ The battle map comes in two halves that face each other across the table:
 ![Both halves, facing each other](docs/star_theater/theater_scene2.png)
 
 `python -m terrain.star_theater.scene [gap_mm]` writes `theater_scene.stl` with the two halves set
-out facing each other (the gap defaults to 150 mm). Each half is 400 mm wide. The stage is ~246 mm
-deep and the seating ~304 mm, so a 3' × 3' table leaves about 360 mm for the gap.
+out facing each other (the gap defaults to 150 mm). Each half is 400 mm wide. The stage is ~286 mm
+deep including its orchestra pit, and the seating is 252 mm, so a 3' × 3' table leaves about 375 mm
+for the gap.
 
 ## Part one: the stage
 
@@ -24,6 +25,7 @@ deep and the seating ~304 mm, so a 3' × 3' table leaves about 360 mm for the ga
 |---|---|
 | ![front](docs/star_theater/stage_front.png) | ![back](docs/star_theater/stage_back.png) |
 | ![arch](docs/star_theater/stage_arch.png) | ![box](docs/star_theater/stage_box.png) |
+| ![pit](docs/star_theater/stage_pit.png) | ![backstage](docs/star_theater/stage_backstage.png) |
 
 ### What's on it
 
@@ -31,6 +33,11 @@ deep and the seating ~304 mm, so a 3' × 3' table leaves about 360 mm for the ga
   apron extends ~110 mm in front of the wall, with recessed skirt panels, a star medallion,
   shell-hooded footlights and a magician's trapdoor marked with a star. Three steps lead down
   from each front corner.
+* **Orchestra pit:** a sunken pit, 55 mm deep, wraps around the front of the apron between the two
+  staircases. Its plank floor is 14 mm below the stage.
+  * Inside: an upright piano with a candelabra, the conductor's podium, four music stands with
+    stools, and a drum.
+  * A rail with ball-topped posts runs along the front, with a gate near each end.
 * **Proscenium wall:** 20 mm thick and 170 mm above the deck, standing across the middle of the base.
   * The segmental arch opening is 200 mm wide and ~130 mm tall. It has a stepped moulding, a
     keystone, fluted pilasters, a dentil cornice, tied-back main drapes and a swagged valance
@@ -57,7 +64,7 @@ the slicer.
 
 | Part | Footprint (mm) | How it prints |
 |---|---|---|
-| `deck_front_left` / `_right` | 202 × 139 | flat, top up |
+| `deck_front_left` / `_right` | 202 × 178 | flat, top up (includes the orchestra pit) |
 | `deck_back_left` / `_right` | 202 × 108 | flat, top up (props included) |
 | `wall_front_centre` | 218 × 201 | lying on its back: the split face on the bed, audience side up |
 | `wall_front_left` / `_right` | 91 × 172 | lying on its back; the box bracket points up |
@@ -86,7 +93,7 @@ the slicer.
   thousands). Each face gets a half-sphere pocket, and the ball centres the two parts as they close.
   Glue the plastic faces as usual; the ball is trapped between them. Real BBs run about 4.35–4.5 mm.
   If yours differ, change `BALL_D` in `terrain/common/csg.py` and rebuild. There are 8 per deck seam,
-  10 between the wall halves, 6 per wall side seam, and 2 per balcony.
+  10 between the wall halves, 6 per wall side seam, and 2 per balcony, plus one in the pit floor.
 * The wall's **2 mm tenon** drops into a matching **slot in the deck**, with 0.2 mm clearance. The
   tenon also bridges the deck's front/back seam.
 * Glue as you go. Suggested order: pin and glue the deck quarters together. Assemble each wall half,
@@ -95,54 +102,65 @@ the slicer.
 **Overhang check:** the build runs `terrain/common/printcheck.py` on every part in its print
 orientation. It reports any downward-facing surface steeper than 45° that isn't on the bed. What's
 left is all small: 0.8 mm steps under the deck lip and the cabinet crown, the domed tops of the BB
-pockets, crate bottoms crossing the floor grooves, and the balcony top rail bridging ~5 mm between
-balusters. No
-supports are needed. The finest details are about 1.6 mm (baluster necks), which is fine for a
+pockets, crate bottoms crossing the floor grooves, the balcony top rail bridging ~5 mm between
+balusters, a 0.6 mm lip on the piano lid, and the music-stand desks. The desks cantilever ~5 mm
+either side of their posts; they're tiny, but a slow outer-wall speed helps there. No supports are
+needed. The finest details are about 1.6 mm (baluster necks), which is fine for a
 0.4 mm nozzle or resin.
 
 ## Part two: the seating
 
 ![Seating, from the stage](docs/star_theater/seating_s_stage.png)
 
-| Rows | Back wall | Orchestra pit |
-|---|---|---|
-| ![rows](docs/star_theater/seating_s_rows.png) | ![wall](docs/star_theater/seating_s_wall.png) | ![pit](docs/star_theater/seating_s_pit.png) |
+| Balcony | Under the balcony |
+|---|---|
+| ![balcony](docs/star_theater/seating_s_bal.png) | ![under](docs/star_theater/seating_s_under.png) |
+| ![rows](docs/star_theater/seating_s_rows.png) | ![wall](docs/star_theater/seating_s_wall.png) |
 
-* **Orchestra pit** along the front edge: a planked floor with an upright piano (with candelabra),
-  the conductor's podium, five music stands with stools, and a drum. A curved rail with ball-topped
-  posts separates it from the house.
-* **Four raked rows** of velvet theatre chairs, curved toward the stage and each 6 mm higher than the
-  last. There are 96 chairs, with tufted backs and armrests, plus cast-iron end panels with stars on
-  the aisles.
-  * Each row leaves ~33 mm of standing room in front of the chairs, so 30 mm bases fit between rows.
-  * The centre aisle is 44 mm wide with a carpet runner. The side aisles are 32 mm.
-* **Rear walkway** with a diamond-tiled floor, 24 mm above the pit floor.
+* **Eight close-packed rows** of velvet theatre chairs, 192 in all (plus 28 in the balcony). The rows are 17 mm apart,
+  curve toward the stage, and each is 3 mm higher than the one in front. The chairs have tufted backs
+  and armrests, with cast-iron end panels with stars on the aisles.
+  * Models stand *on* the chairs: count them as difficult terrain that gives cover (the character
+    is ducking down behind the seats). A base resting across two rows' chair backs tilts about 10°.
+* **Wide aisles** are the fast way forward: a 44 mm centre aisle with a carpet runner, 32 mm side
+  aisles, and a tiled cross aisle 35–50 mm deep along the front edge.
+* **Rear walkway** with a diamond-tiled floor, behind the last row.
+* **Balcony** over the walkway, for a ranged character or two.
+  * About 210 × 46–54 mm, with two bowed rows of seats either side of a small centre aisle.
+  * It sits behind a parapet with stars, ball-topped posts and a decorated front, with a door
+    into the back wall.
+  * Its floor is 84 mm up, and there's 52 mm of headroom on the walkway below.
+  * It comes no further forward than the back row, so there's little reaching under.
+  * It rests on four cast-iron columns and a ledge on the back wall, held in place by BBs. Leave it
+    unglued and you can lift it off to reach the walkway.
 * **Back wall**, matching the stage:
-  * Pilasters and a dentil cornice.
-  * A 40 mm double doorway under a pediment with a star, and a 30 mm doorway at each side aisle.
-  * Gas sconces and two framed playbills: *"COLETTE DU BOIS ★ STAR OF THE SHOW"* and
+  * Pilasters, a dentil cornice and gas sconces.
+  * A 36 mm double doorway under the balcony, and a 30 mm doorway at each side aisle.
+  * Two framed playbills: *"COLETTE DU BOIS ★ STAR OF THE SHOW"* and
     *"THE MECHANICAL DOVES ★ NIGHTLY"*.
 
-### Printing the seating: 7 parts
+### Printing the seating: 8 parts
 
 ![Seating print parts](docs/star_theater/seating_print_plate.png)
 
 | Part | Footprint (mm) | How it prints |
 |---|---|---|
-| `seating_floor_front_left` / `_right` | 200 × 152 | flat (pit, rows 1–2) |
-| `seating_floor_back_left` / `_right` | 200 × 171 | flat (rows 3–4, walkway) |
-| `seating_wall_centre` | 84 × 111 | lying on its plain back, decoration up |
-| `seating_wall_left` / `_right` | 158 × 111 | lying on its plain back |
+| `seating_floor_front_left` / `_right` | 200 × 118 | flat (cross aisle, rows 1–4) |
+| `seating_floor_back_left` / `_right` | 200 × 154 | flat (rows 5–8, walkway, columns) |
+| `seating_wall_centre` | 84 × 138 | lying on its plain back, decoration up |
+| `seating_wall_left` / `_right` | 158 × 138 | lying on its plain back; the balcony ledge points up |
+| `seating_balcony` | 212 × 55 | flat on its underside |
 
-* The floor splits down the centre aisle and along the front edge of row 3. That seam follows the
+* The floor splits down the centre aisle and along the front edge of row 5. That seam follows the
   curve and hides at the foot of a step.
-* The back wall has a flat back (it faces the lobby, or the table edge), so it prints lying on it
-  in one layer. It splits just outside the centre pilasters.
+* The columns print standing up on the back floor pieces: 4.6 mm shafts, 52 mm tall. Each capital
+  has a 45° flare, and its top carries a BB pocket for the balcony.
+* The back wall has a flat back (it faces the lobby, or the table edge), so it prints lying on it.
+  It splits just outside the centre pilasters. The balcony ledge underneath slopes at 45°.
 * Joinery is the same as the stage: BB pockets on every seam (4 on the aisle seam, 6 on the curved
-  seam, 4 on the wall seams), and a wall tenon that drops into a slot in the walkway.
-* Overhang check: nothing needs supports. The only flags are the pocket domes, a 0.6 mm lip on the
-  piano lid, and the music-stand desks, which cantilever ~5 mm either side of their posts. The desks
-  are tiny, but they're the one spot where a slow outer-wall speed helps.
+  seam, 4 on the wall seams), and a wall tenon that drops into a slot in the walkway. The balcony
+  takes 8 BBs: 4 on the column tops and 4 on the wall ledge.
+* Overhang check: nothing needs supports. The only flags are the pocket domes.
 
 ## Coordinates / conventions
 
