@@ -2,8 +2,7 @@
 
 Colette Du Bois' theater in Malifaux: a ritzy proscenium stage with a curved
 apron and an orchestra pit out front, a proscenium wall standing across the
-middle of the base, and
-a backstage area behind it. Two side doors and the main arch let models move
+middle of the base, and a backstage area behind it. Two side doors and the main arch let models move
 between front-of-house and backstage.
 
 Run from the repo root:
