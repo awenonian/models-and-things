@@ -179,7 +179,8 @@ python -m projects.star_theater.scene 150    # both halves, 150 mm apart: output
 ```
 
 Each build prints a report per part: footprint, height, solid volume, a rough filament estimate and any
-overhangs. The whole theater is 20 parts and about 2.8 kg of PLA at typical settings. Bambu Studio
+overhangs. The whole theater is 20 parts and about 2.5 kg of PLA at 15% infill (about 1.9 kg at 5%, or less
+with Lightning infill, which suits these flat-topped floors). Bambu Studio
 lays it out as 12+ plates of ~8 hours each.
 
 Files here: `stage.py` and `seating.py` (the two halves), `ornament.py` (pilasters and the clockwork

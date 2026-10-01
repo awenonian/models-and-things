@@ -23,6 +23,7 @@ modelkit/            shared tools for every project
   printcheck.py      overhang / bed-fit check, and rotation into print orientation
   export.py          writes a project's parts + the per-part printability report
   printer.py         the printer and table we design for (bed size, filament estimate)
+  hollow.py          supportless vaulted channels for hollowing thick parts (mainly for resin)
   layout.py          lays print parts out on one "plate" for preview images
 tools/render/        headless three.js renderer for preview PNGs
 projects/<name>/     one folder per model: code, README, images/, output/ (generated STLs)

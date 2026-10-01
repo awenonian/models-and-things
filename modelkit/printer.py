@@ -13,7 +13,9 @@ USABLE_BED = tuple(v - BED_MARGIN for v in BED)
 # sheets, rulebooks and dice.
 TABLE = (1000.0, 2000.0)
 
-# Rough filament estimate: PLA density, and the fraction of a part's solid
-# volume a typical slicer profile actually fills (walls + ~15% infill).
+# Filament estimate, modelled the way a slicer fills a part: a solid shell
+# (walls + top/bottom skins, ~1 mm) over the whole surface, and sparse infill
+# inside it. Defaults match a typical Bambu 0.4 mm profile (2 walls, 15% infill).
 PLA_G_PER_CM3 = 1.24
-FILL_FRACTION = 0.35
+SHELL_MM = 1.0
+INFILL = 0.15

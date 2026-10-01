@@ -12,13 +12,20 @@ something new is learned. Machine-readable values live in `modelkit/printer.py`.
   rulebooks and dice.
   * Someday: a set that fills as much of the table as possible, with that space still left over.
     Ambitious; not a current goal.
-* **Print time and filament are real costs.** The Star Theater is 20 parts, about 2.8 kg of PLA, and
-  12+ plates of ~8 hours each. Getting finished parts off the bed will need some automation. So:
-  * Watch the solid volume and rough-grams columns in the build report. Big solid slabs are where
-    the filament goes; the theater's deck and floor pieces alone are over half of it.
-  * Ways to cut volume: hollow undersides with internal ribs for thick floors and bases (they print
-    flat, ribs down), thinner base plates where nothing needs the depth, and raised areas built as
-    shells rather than solid blocks.
+* **Print time and filament are real costs.** The Star Theater is 20 parts, about 2.5 kg of PLA at
+  15% infill, and 12+ plates of ~8 hours each. Getting finished parts off the bed will need some
+  automation.
+  * The build report's `~g` column estimates filament the way a slicer fills a part: a solid ~1 mm
+    shell over every surface, plus sparse infill inside (`modelkit/printer.py`). Floors and decks
+    are most of it: 1.6 of the theater's 2.5 kg.
+  * **The best lever is slicer settings, not geometry.** Terrain needs very little strength.
+    Dropping infill from 15% to 5% takes the theater from ~2.5 to ~1.9 kg. Bambu Studio's
+    **Lightning** infill, which only holds up top surfaces, suits flat-topped floors even better.
+  * **Hollowing floors from below barely helps on FDM.** It was measured on the theater's deck:
+    vaulted channels removed ~45% of the solid volume but only ~7% of the filament, because the
+    infill was already sparse and every rib adds solid walls. `modelkit/hollow.py` (supportless
+    vaulted channels) is kept for resin prints, which print solid, and for high-infill FDM.
+  * Every surface costs a solid shell, so lots of small detail adds up. Big plain areas are cheap.
   * Fewer, fuller plates beat many small ones. Lay out parts near 250 mm when the seams allow.
 
 ## Scale and gameplay

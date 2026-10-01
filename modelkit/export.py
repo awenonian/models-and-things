@@ -8,15 +8,24 @@ from manifold3d import Manifold
 
 from modelkit.csg import write_stl
 from modelkit.printcheck import check, orient
-from modelkit.printer import FILL_FRACTION, PLA_G_PER_CM3, USABLE_BED
+from modelkit.printer import INFILL, PLA_G_PER_CM3, SHELL_MM, USABLE_BED
 
 Parts = dict[str, tuple[Manifold, tuple[float, float, float]]]
+
+
+def filament_grams(m: Manifold) -> float:
+    """Rough slicer-style estimate: solid shell over the surface, sparse infill inside.
+    Thin features (thinner than two shells) count as solid."""
+    vol = m.volume()
+    shell = min(vol, m.surface_area() * SHELL_MM)
+    return (shell + INFILL * (vol - shell)) / 1000.0 * PLA_G_PER_CM3
 
 
 def export_parts(assembled: Manifold, parts: Parts, out_dir: str | Path, name: str) -> None:
     """Write `<name>_assembled.stl` plus `print/<part>.stl` for each part (rotated so
     its `up` is +Z, resting on z = 0), and print one report line per part:
-    triangles, footprint, height, solid volume, rough filament, overhangs, and
+    triangles, footprint, height, solid volume, estimated filament (see
+    `filament_grams`), overhangs, and
     warnings for parts that fall apart into pieces or don't fit the bed."""
     out = Path(out_dir)
     n = write_stl(assembled, out / f"{name}_assembled.stl", f"{name}_assembled")
@@ -27,7 +36,7 @@ def export_parts(assembled: Manifold, parts: Parts, out_dir: str | Path, name: s
         ntri = write_stl(orient(m, up), out / "print" / f"{pname}.stl", pname)
         rep = check(m, up)
         cm3 = m.volume() / 1000.0
-        grams = cm3 * FILL_FRACTION * PLA_G_PER_CM3
+        grams = filament_grams(m)
         total_g += grams
         fp = "x".join(f"{v:.0f}" for v in rep.footprint)
         ov = ", ".join(f"{o.area:.0f}mm2 {o.size[0]:.0f}x{o.size[1]:.0f}"
@@ -39,4 +48,4 @@ def export_parts(assembled: Manifold, parts: Parts, out_dir: str | Path, name: s
         print(f"{pname:26s} {ntri:7d} {fp:>9s} {rep.height:4.0f} {cm3:5.0f} {grams:4.0f}  {ov}"
               f"  (minor {rep.minor_area:.0f}mm2){warn}")
     print(f"{'total':26s} {'':7s} {'':9s} {'':4s} {'':5s} {total_g:4.0f}  "
-          f"(~{total_g / 1000:.1f} kg PLA, rough)")
+          f"(~{total_g / 1000:.1f} kg PLA at {INFILL:.0%} infill, rough)")
