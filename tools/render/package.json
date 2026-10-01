@@ -1,0 +1,9 @@
+{
+  "name": "terrain-render",
+  "private": true,
+  "type": "module",
+  "description": "Headless three.js preview renderer for terrain STLs",
+  "dependencies": {
+    "three": "^0.186.1"
+  }
+}
