@@ -20,6 +20,7 @@ const VIEWS = {
   apron:    { eye: [120, 260, 90], target: [60, 60, 20], fov: 40 },
   backstage:{ eye: [60, -320, 140], target: [60, -70, 40], fov: 40 },
   marquee:  { eye: [20, 160, 200], target: [0, 0, 180], fov: 35 },
+  plate:    { eye: [394, -820, 620], target: [394, -110, 0], fov: 38 },
   dove:     { eye: [-40, 120, 120], target: [-88, 0, 158], fov: 30 },
 };
 const server = http.createServer((req, res) => {
