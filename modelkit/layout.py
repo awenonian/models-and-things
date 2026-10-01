@@ -4,7 +4,7 @@ from pathlib import Path
 
 from manifold3d import Manifold
 
-from terrain.common.csg import union, write_stl
+from modelkit.csg import union, write_stl
 
 
 def read_stl(path):

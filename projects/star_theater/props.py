@@ -6,7 +6,7 @@ import math
 
 from manifold3d import Manifold
 
-from terrain.common.csg import box, cyl, extrude_xy, extrude_yz, section
+from modelkit.csg import box, cyl, extrude_xy, extrude_yz, section
 
 
 def piano() -> Manifold:

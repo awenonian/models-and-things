@@ -6,9 +6,9 @@ middle of the base, and a backstage area behind it. Two side doors and the main 
 between front-of-house and backstage.
 
 Run from the repo root:
-    python -m terrain.star_theater.stage
+    python -m projects.star_theater.stage
 
-Outputs (in output/star_theater/):
+Outputs (in projects/star_theater/output/):
     stage_assembled.stl   the whole piece as it stands on the table (preview)
     print/*.stl           12 printable parts, already rotated into print orientation
 
@@ -27,13 +27,16 @@ from pathlib import Path
 
 from manifold3d import CrossSection, Manifold
 
-from terrain.common.csg import (
+from modelkit.csg import (
     ball_pocket, box, circle_pts, cyl, ellipse, extrude_xy, extrude_xz, extrude_yz,
     revolve_profile, ring, section, segmental_arch_pts, sphere, star_pts,
-    text_section, union, write_stl,
+    text_section, union,
 )
-from terrain.star_theater.ornament import dove, pilaster
-from terrain.star_theater.props import drum, music_stand, piano, podium, stool
+from modelkit.export import export_parts
+from projects.star_theater.ornament import dove, pilaster
+from projects.star_theater.props import drum, music_stand, piano, podium, stool
+
+OUT_DIR = Path(__file__).parent / "output"
 
 # ---------------------------------------------------------------------------
 # Key dimensions (mm)
@@ -927,27 +930,8 @@ def build() -> tuple[Manifold, dict[str, tuple[Manifold, tuple[int, int, int]]]]
     return assembled, parts
 
 
-def main(out_dir: str = "output/star_theater") -> None:
-    from terrain.common.printcheck import check, orient
-
-    assembled, parts = build()
-    out = Path(out_dir)
-    n = write_stl(assembled, out / "stage_assembled.stl", "stage_assembled")
-    print(f"stage_assembled  {n:7d} tris")
-    print(f"{'part':20s} {'tris':>7s}  {'footprint':>13s} {'height':>6s}  overhangs")
-    for name, (m, up) in parts.items():
-        pm = orient(m, up)
-        ntri = write_stl(pm, out / "print" / f"{name}.stl", name)
-        rep = check(m, up)
-        ncomp = len(m.decompose())
-        fp = "x".join(f"{v:.0f}" for v in rep.footprint)
-        ov = ", ".join(f"{o.area:.0f}mm2 {o.size[0]:.0f}x{o.size[1]:.0f}"
-                       f"@({o.center[0]:.0f},{o.center[1]:.0f},{o.center[2]:.0f})"
-                       for o in rep.overhangs[:4]) or "none"
-        warn = "" if ncomp == 1 else f"  !! {ncomp} pieces"
-        warn += "" if rep.fits((220, 220)) else "  !! exceeds 220 bed"
-        print(f"{name:20s} {ntri:7d}  {fp:>13s} {rep.height:6.0f}  {ov}"
-              f"  (minor {rep.minor_area:.0f}mm2){warn}")
+def main(out_dir: str = str(OUT_DIR)) -> None:
+    export_parts(*build(), out_dir, "stage")
 
 
 if __name__ == "__main__":

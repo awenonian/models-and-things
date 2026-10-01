@@ -1,19 +1,19 @@
 """Both halves of the Star Theater set out facing each other, for previews.
 
-    python -m terrain.star_theater.scene [gap_mm]
+    python -m projects.star_theater.scene [gap_mm]
 
-Writes output/star_theater/theater_scene.stl: the stage, then the seating
+Writes projects/star_theater/output/theater_scene.stl: the stage, then the seating
 `gap_mm` (default 150) in front of the apron.
 """
 
 import sys
 from pathlib import Path
 
-from terrain.common.csg import write_stl
-from terrain.star_theater import seating, stage
+from modelkit.csg import write_stl
+from projects.star_theater import seating, stage
 
 
-def main(gap: str = "150", out_dir: str = "output/star_theater") -> None:
+def main(gap: str = "150", out_dir: str = str(stage.OUT_DIR)) -> None:
     st, _ = stage.build()
     se, _ = seating.build()
     front = st.bounding_box()[4]

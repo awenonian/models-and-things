@@ -10,7 +10,7 @@ import math
 
 from manifold3d import Manifold
 
-from terrain.common.csg import (
+from modelkit.csg import (
     box, circle_pts, extrude_xz, extrude_yz, gear_pts, section, sphere, union,
 )
 

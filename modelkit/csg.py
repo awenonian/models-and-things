@@ -1,6 +1,6 @@
-"""Small helper layer over manifold3d for building printable terrain.
+"""Small helper layer over manifold3d for building printable models.
 
-Conventions used throughout the terrain models:
+Conventions used throughout:
   * Units are millimetres.
   * X runs left/right, Y runs front/back (+Y is toward the audience / viewer),
     Z is up. The tabletop is at Z = 0.
