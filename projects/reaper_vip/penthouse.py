@@ -21,7 +21,7 @@ from pathlib import Path
 import numpy as np
 from manifold3d import CrossSection, JoinType, Manifold, OpType
 
-from modelkit.csg import box, extrude_xy, section, union
+from modelkit.csg import box, circle_pts, extrude_xy, section, union
 from modelkit.export import export_parts
 from projects.reaper_vip import details, plan
 from projects.reaper_vip.plan import M
@@ -51,7 +51,10 @@ def _holo_zone() -> CrossSection:
     a = np.array([ax, ay]) + n_sw * t / 2 - d * 500
     b = np.array([bx, by]) + n_sw * t / 2 + d * 500
     half = section([M(*a), M(*b), M(*(b - n_sw * 1000)), M(*(a - n_sw * 1000))])
-    return half ^ _rect(605.5, 457.5, plan.BIG, plan.BIG)
+    # The holo tile owns the piers at both ends of the diagonal wall.
+    piers = CrossSection.batch_boolean([section(circle_pts(*M(x, y), r + 0.5, 40)[:-1])
+                                        for x, y, r in plan.PIERS], OpType.Add)
+    return (half ^ _rect(605.5, 457.5, plan.BIG, plan.BIG)) + piers
 
 
 def _dining_zone() -> CrossSection:

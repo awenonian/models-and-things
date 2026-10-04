@@ -50,6 +50,7 @@ const VIEWS = {
   p_plate:  { eye: [531, -1250, 900], target: [531, -142, 0], fov: 40 },
   t_top:    { eye: [0, -30, 420], target: [0, 0, 0], fov: 40 },
   t_low:    { eye: [-160, -240, 160], target: [0, 0, 5], fov: 40 },
+  p_piers:  { eye: [140, -350, 120], target: [240, -225, 10], fov: 40 },
   p_bath:   { eye: [-90, -320, 170], target: [-120, -150, 5], fov: 40 },
 };
 const server = http.createServer((req, res) => {

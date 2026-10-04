@@ -14,7 +14,7 @@ import random
 import numpy as np
 from manifold3d import CrossSection, JoinType, Manifold, OpType
 
-from modelkit.csg import box, extrude_xy, section, union
+from modelkit.csg import box, cyl, extrude_xy, section, union
 from projects.reaper_vip import plan
 from projects.reaper_vip.plan import M
 
@@ -329,6 +329,7 @@ def build_shell(extra_cuts: Manifold | None = None) -> tuple[Manifold, Manifold]
     floor -= extrude_xy(grooves, FLOOR_T - GROOVE_D, FLOOR_T + 1)
 
     walls = union(build_wall(w) for w in plan.WALLS)
+    walls += union(cyl(r, 0.0, TOP, *M(x, y), segments=40) for x, y, r in plan.PIERS)
     cuts, jambs = zip(*(door_cut(d) for d in plan.DOORS))
     walls -= union(cuts)
     walls += union(jambs)

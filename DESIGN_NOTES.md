@@ -143,6 +143,13 @@ These worked on the Star Theater; treat them as defaults.
   * Make touching parts overlap by about 0.05 mm (shelves into dividers, items onto shelves, stacked
     rail steps).
   * The export report now flags any part with back-to-back faces (`printcheck.sheet_area`).
+* **Free-standing stubs at seams.** Every tile edge must leave each wall piece attached to
+  something solid on its own tile. Watch for:
+  * a wall's end cap poking past the wall it meets (end walls on the other wall's centre line)
+  * the short end of a wall or screen beside a doorway, when the wall it joins is on the other tile
+    (give the stub to that tile)
+  * junctions where several walls end at one point and a seam crosses at an angle (put a solid
+    round pier there, owned by one tile)
 * **The floor slab must stop at the outside of the thinnest outside wall.** The slab was
   offset 3.5 mm (half a 7 mm wall) all round. Next to the 5 mm gym wall that left a 1 mm strip of
   floor outside it, and a seam put that strip on another tile.

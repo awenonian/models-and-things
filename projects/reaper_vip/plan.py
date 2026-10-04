@@ -60,6 +60,13 @@ OUTER_CURVE = [(797, 470), (795, 512), (784, 556), (764, 600), (737, 638), (710,
                (680, 682), (630, 706), (570, 730), (500, 750), (430, 762), (380, 767), (328, 770)]
 HOLO_DIAG = [(603, 600), (712, 662)]
 
+# Round piers where several walls end at one point: the holo space's diagonal
+# wall meets the dining glass and the holo wall at its inner end, and the holo
+# window and the balcony rail at its outer end. A tile seam crossing such a
+# junction at an angle would leave slivers; a solid pier owned by one tile
+# doesn't. (x, y, radius)
+PIERS = [(604.0, 602.0, 5.0), (711.0, 663.0, 6.0)]
+
 WALLS: list[Wall] = [
     # --- building corridor, lift and stairs (common area) ---------------------
     Wall("corr_n", [(66.5, 195), (307.5, 195)], T_EXT),
@@ -68,7 +75,7 @@ WALLS: list[Wall] = [
     Wall("lifts_s", [(70, 345), (232, 345)], T_EXT),
     Wall("lift_e", [(148, 260), (148, 345)]),
     # --- gym -----------------------------------------------------------------
-    Wall("gym_w", [(310, 100), (310, 262.5)]),
+    Wall("gym_w", [(310, 100), (310, 260)]),      # stops on the corridor wall's centre line
     Wall("gym_glass", [(310, 100), (355, 53), (430, 53), (478, 100)], T_EXT, "glass"),
     Wall("gym_s", [(312.5, 260), (475.5, 260)], 3.0, "partition"),
     Wall("gym_e", [(478, 100), (478, 343)]),
@@ -93,7 +100,7 @@ WALLS: list[Wall] = [
     Wall("wc_e", [(622, 343), (622, 400)]),
     Wall("sdc_w", [(652, 343), (652, 455)]),
     Wall("holo_n", [(580, 455), (797, 455)]),
-    Wall("sdc_e", [(797, 340), (797, 470)], T_EXT),
+    Wall("sdc_e", [(797, 344), (797, 470)], T_EXT),     # its end cap stays inside spa_s
     # --- master bedroom, bath, closet, storage ---------------------------------
     Wall("bed_n", [(10, 500), (232, 500)], T_EXT),
     Wall("bed_glass", BEDROOM_CURVE + [(185, 680)], T_EXT, "glass", curve=True),
@@ -158,7 +165,7 @@ ROOMS: list[Room] = [
     Room("storage", [(245, 612), (328, 612), (328, 770), (245, 770)], "plate", 10),
     Room("bedroom", [(0, 500), (245, 500), (245, 690), (0, 690)], "planks", 9),
     Room("dining", [(328, 484), (603, 484), (603, 704), (328, 704)], "planks", 9),
-    Room("holo", [(603, 455), (800, 455), (800, 670), (603, 670)], "hex", 16),
+    Room("holo", [(603, 455), (800, 455), (800, 670), (712, 662), (603, 600)], "hex", 16),
     Room("balcony", [(328, 600), (720, 600), (720, 775), (328, 775)], "deck", 12, -18),
 ]
 
@@ -182,12 +189,14 @@ OUTLINE_STRAIGHT_N = [(66.5, 195), (310, 195), (310, 100), (355, 53), (430, 53),
 
 BIG = 2000.0
 ZONES: list[tuple[str, list]] = [
-    ("gym", [(307.5, -BIG, 480.5, 262.5), (290.0, -BIG, 307.5, 191.5)]),
+    ("gym", [(307.5, -BIG, 480.5, 262.5), (290.0, -BIG, 307.5, 191.5),
+             (480.5, 199.5, 494.2, 204.5)]),     # the shower screen's stub, on the gym wall
     ("hot_tub", [(480.5, -BIG, 652.5, 340.5)]),
     ("sauna", [(652.5, -BIG, BIG, 340.5)]),
     ("corridor", [(-BIG, -BIG, 307.5, 348.5)]),
     ("kitchen", [(307.5, 262.5, 480.5, 486.5), (480.5, 340.5, 520.5, 486.5)]),
-    ("bedroom", [(-BIG, 496.5, 235.5, BIG), (-BIG, 400.0, 66.4, BIG), (-BIG, 609.5, 242.5, BIG)]),
+    ("bedroom", [(-BIG, 496.5, 235.5, BIG), (-BIG, 400.0, 66.4, BIG), (-BIG, 609.5, 242.5, BIG),
+                 (-BIG, 534.0, 239.2, 542.0)]),     # the bath wall's stub beside the door
     ("guest_room", [(-BIG, 348.5, 307.5, 486.5), (-BIG, 486.5, 235.5, 496.5)]),
     ("passage", [(520.5, 340.5, 652.0, 457.5), (520.5, 457.5, 605.5, 486.5)]),
     ("sensory", [(652.0, 340.5, BIG, 457.5)]),
