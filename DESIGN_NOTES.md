@@ -52,6 +52,14 @@ something new is learned. Machine-readable values live in `modelkit/printer.py`.
     playbills) are what make a set feel like a place.
 * **Multi-piece sets:** pieces that face each other across the table, so they can be spread apart
   to make room.
+* **Floor plans from a map (Reaper VIP):** a whole location as cutaway floor tiles.
+  * Walls are cut off 25 mm above the floor. That's low enough to reach over and move models, and
+    tall enough for wall detail (a safe, a painting, padding).
+  * Trace the map at 1 px = 1 mm (`tools/mapgrid.py` makes gridded crops). Room sizes came out right
+    for 30–40 mm bases.
+  * Put everything the room notes mention into the model, but leave characters and creatures out:
+    they're minis.
+  * A secret worth finding can be its own part: the painting lifts off its pegs to show the safe.
 
 ## Printing conventions
 
@@ -80,6 +88,16 @@ These worked on the Star Theater; treat them as defaults.
   0.2 mm clearance.
 * **Fine detail:** about 1.2 mm minimum (0.8 mm grooves are fine). Relief text needs a cap height of
   4 mm or more.
+* **Floor tiles with walls and furniture built in** print flat with no supports.
+  * Seams run along a wall's face, so one tile keeps the whole wall.
+  * When both faces of a wall carry detail, run the seam down the middle of the wall instead, so
+    each half keeps its own face. A detail on the far side of a seam is left floating; the one-piece
+    check catches it.
+  * Keep furniture clear of seams.
+* **Furniture that prints in place:** use solid pedestals that flare out to the top, not legs.
+  Bridges of 30 mm or less are fine for shelves, rails and ropes.
+* **Glass walls** are a sill, a 1.6 mm pane, mullions at most ~26 mm apart, and a head rail that
+  steps out at 45° over the pane.
 
 ## Workflow and tooling
 
@@ -108,3 +126,11 @@ These worked on the Star Theater; treat them as defaults.
   model. The `extrude_*` helpers now guard against it.
 * **Decoration past the end of a piece:** frames and mouldings that stick out past a wall's end
   print over air. Trim decoration to the piece's outline.
+* **Exactly 45° gets flagged.** Floating-point noise puts half the faces of a true 45° slope past
+  the limit. Make flares a little steeper (rise = 1.15 × run).
+* **Props sitting flush on a grooved floor** leave tiny bridges over the grooves and coincident
+  faces. Sink props into the floor by the groove depth.
+* **Zone boundaries exactly on a wall face** leave zero-volume slivers when cutting tiles. Drop
+  pieces under 1 mm³, or move the boundary a hair off the face.
+* **The overhang report misreads thin loops.** A 0.6 mm groove ceiling running round a perimeter
+  shows up as a big region. Avoid groove ceilings (cut grooves from the top), or ignore them.
