@@ -188,7 +188,7 @@ in place, so nothing needs gluing. The painting is the 15th part.
 ## Files
 
 ```
-plan.py       the traced floor plan: walls, doorways, rooms (floor finishes), print-tile zones
+plan.py       the traced floor plan: walls, doorways, rooms (a seed point and floor finish each), print-tile zones
 shell.py      floor slab, floor patterns, solid and glass walls, doorways
 props.py      furniture library (each prop in its own frame, front toward +Y)
 details.py    what goes where: furniture, wall reliefs, hot tub, cage, painting and safe

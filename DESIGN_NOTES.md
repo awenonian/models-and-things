@@ -143,6 +143,10 @@ These worked on the Star Theater; treat them as defaults.
   * Make touching parts overlap by about 0.05 mm (shelves into dividers, items onto shelves, stacked
     rail steps).
   * The export report now flags any part with back-to-back faces (`printcheck.sheet_area`).
+* **Floor finishes come from the walls, not from rough room outlines.** Rectangles drawn per room
+  overlapped and crossed walls, laying two patterns over each other. Instead, split the slab along
+  each wall's full footprint, plus break lines where rooms open into each other with no wall.
+  Give each room the region around a seed point (`shell.room_regions`).
 * **Free-standing stubs at seams.** Every tile edge must leave each wall piece attached to
   something solid on its own tile. Watch for:
   * a wall's end cap poking past the wall it meets (end walls on the other wall's centre line)

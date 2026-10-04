@@ -51,6 +51,9 @@ const VIEWS = {
   t_top:    { eye: [0, -30, 420], target: [0, 0, 0], fov: 40 },
   t_low:    { eye: [-160, -240, 160], target: [0, 0, 5], fov: 40 },
   p_piers:  { eye: [140, -350, 120], target: [240, -225, 10], fov: 40 },
+  f_south:  { eye: [180, -520, 260], target: [130, -200, 0], fov: 40 },
+  f_spa:    { eye: [140, 60, 260], target: [150, 150, 0], fov: 45 },
+  f_closet: { eye: [-260, -230, 200], target: [-150, -170, 0], fov: 40 },
   p_bath:   { eye: [-90, -320, 170], target: [-120, -150, 5], fov: 40 },
 };
 const server = http.createServer((req, res) => {

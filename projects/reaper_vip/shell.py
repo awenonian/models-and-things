@@ -10,11 +10,12 @@ from __future__ import annotations
 
 import math
 import random
+import zlib
 
 import numpy as np
 from manifold3d import CrossSection, JoinType, Manifold, OpType
 
-from modelkit.csg import box, cyl, extrude_xy, section, union
+from modelkit.csg import box, circle_pts, cyl, extrude_xy, section, union
 from projects.reaper_vip import plan
 from projects.reaper_vip.plan import M
 
@@ -219,8 +220,23 @@ def _pavers(bounds, pitch: float, angle: float):
     return CrossSection.batch_boolean(parts, OpType.Add).rotate(angle).translate((cx, cy))
 
 
-def floor_pattern(room: plan.Room) -> CrossSection:
-    region = section([M(*q) for q in room.poly])
+def room_regions(floor_cs: CrossSection) -> dict[str, CrossSection]:
+    """Each room's floor: the slab minus every wall's footprint (doorways closed)
+    and the FLOOR_BREAKS, keeping the piece around the room's seed."""
+    cuts = [stroke(wall_path(w), w.t) for w in plan.WALLS]
+    cuts += [stroke([M(*q) for q in line], 0.6) for line in plan.FLOOR_BREAKS]
+    pieces = (floor_cs - CrossSection.batch_boolean(cuts, OpType.Add)).decompose()
+    out = {}
+    for room in plan.ROOMS:
+        x, y = M(*room.seed)
+        dot = section(circle_pts(x, y, 0.3, 8)[:-1])
+        hits = [c for c in pieces if not (c ^ dot).is_empty()]
+        assert len(hits) == 1, f"room {room.name}: seed is not inside exactly one floor region"
+        out[room.name] = hits[0]
+    return out
+
+
+def floor_pattern(room: plan.Room, region: CrossSection) -> CrossSection:
     b = region.bounds()
     p, a = room.pitch, room.angle
     if room.floor in ("tiles", "small_tiles", "rubber"):
@@ -229,7 +245,7 @@ def floor_pattern(room: plan.Room) -> CrossSection:
     elif room.floor in ("plate", "quilt"):
         g = _lines(b, p, 45 + a) + _lines(b, p, -45 + a)
     elif room.floor == "planks":
-        g = _planks(b, p, a, seed=hash(room.name) % 97)
+        g = _planks(b, p, a, seed=zlib.crc32(room.name.encode()) % 97)
     elif room.floor in ("slats", "deck"):
         g = _lines(b, p, a)
     elif room.floor == "stone":
@@ -325,7 +341,9 @@ def build_shell(extra_cuts: Manifold | None = None) -> tuple[Manifold, Manifold]
     floor_cs = floor_plan()
     floor = extrude_xy(floor_cs, 0.0, FLOOR_T)
     inner = floor_cs.offset(-1.0, JoinType.Miter, 2.0)
-    grooves = CrossSection.batch_boolean([floor_pattern(r) for r in plan.ROOMS], OpType.Add) ^ inner
+    regions = room_regions(floor_cs)
+    grooves = CrossSection.batch_boolean([floor_pattern(r, regions[r.name]) for r in plan.ROOMS],
+                                         OpType.Add) ^ inner
     floor -= extrude_xy(grooves, FLOOR_T - GROOVE_D, FLOOR_T + 1)
 
     walls = union(build_wall(w) for w in plan.WALLS)

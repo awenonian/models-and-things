@@ -488,7 +488,7 @@ def build_props() -> Manifold:
     add(place(P.bathtub(52, 16, 7), 296, 495, "s"))
     add(place(P.toilet(), 242.5, 512, "e"))          # clear of the tile seam
     add(place(P.vanity(14, 8, 9), 321, 525, "w"))
-    add(place(P.clothes_rack(38), 301, 546, "s"))
+    add(place(P.clothes_rack(38), 301.3, 546, "s"))
     add(place(P.backpack(), 300, 561, "n"))
 
     # --- master bedroom -----------------------------------------------------------------

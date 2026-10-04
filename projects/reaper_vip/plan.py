@@ -44,7 +44,7 @@ class Door:
 @dataclass
 class Room:
     name: str
-    poly: list[tuple[float, float]]
+    seed: tuple[float, float]  # any point inside the room: it gets the region of floor around it
     floor: str               # planks | tiles | small_tiles | rubber | slats | plate | quilt | stone | none
     pitch: float = 0.0
     angle: float = 0.0       # pattern rotation (deg)
@@ -143,30 +143,40 @@ DOORS: list[Door] = [
 ]
 
 # ---------------------------------------------------------------------------
-# Rooms: floor finish (rough outlines; walls are added over the top)
+# Rooms: floor finish. Each room's floor is the region bounded by walls (and
+# FLOOR_BREAKS) around its seed point, so finishes stop exactly at the walls.
 # ---------------------------------------------------------------------------
 
 ROOMS: list[Room] = [
-    Room("corridor", [(66, 195), (310, 195), (310, 260), (66, 260)], "tiles", 20),
-    Room("lift", [(70, 260), (148, 260), (148, 345), (70, 345)], "plate", 6),
-    Room("stairs", [(148, 260), (232, 260), (232, 345), (148, 345)], "none"),
-    Room("gym", [(310, 53), (478, 53), (478, 260), (310, 260)], "rubber", 24),
-    Room("shower", [(478, 100), (545, 100), (545, 202), (478, 202)], "small_tiles", 6),
-    Room("spa", [(478, 202), (750, 202), (750, 343), (478, 343)], "stone", 18),
-    Room("sauna", [(650, 100), (818, 100), (818, 343), (650, 343)], "slats", 5, 90),
-    Room("hallway", [(232, 260), (518, 260), (518, 367), (232, 367)], "planks", 9),
-    Room("guest", [(70, 345), (232, 345), (232, 500), (70, 500)], "planks", 9, 90),
-    Room("kitchen", [(232, 367), (518, 367), (518, 484), (232, 484)], "tiles", 14, 45),
-    Room("passage", [(518, 343), (580, 343), (580, 484), (518, 484)], "planks", 9, 90),
-    Room("wc", [(580, 343), (652, 343), (652, 455), (580, 455)], "small_tiles", 6),
-    Room("sdc", [(652, 343), (797, 343), (797, 455), (652, 455)], "quilt", 10),
-    Room("bath", [(232, 484), (328, 484), (328, 538), (232, 538)], "small_tiles", 6),
-    Room("closet", [(232, 538), (328, 538), (328, 612), (232, 612)], "planks", 9, 90),
-    Room("storage", [(245, 612), (328, 612), (328, 770), (245, 770)], "plate", 10),
-    Room("bedroom", [(0, 500), (245, 500), (245, 690), (0, 690)], "planks", 9),
-    Room("dining", [(328, 484), (603, 484), (603, 704), (328, 704)], "planks", 9),
-    Room("holo", [(603, 455), (800, 455), (800, 670), (712, 662), (603, 600)], "hex", 16),
-    Room("balcony", [(328, 600), (720, 600), (720, 775), (328, 775)], "deck", 12, -18),
+    Room("corridor", (150, 225), "tiles", 20),
+    Room("lift", (110, 300), "plate", 6),
+    Room("stairs", (190, 300), "none"),
+    Room("gym", (395, 100), "rubber", 24),
+    Room("shower", (510, 150), "small_tiles", 6),
+    Room("spa", (700, 300), "stone", 18),
+    Room("sauna", (780, 180), "slats", 5, 90),
+    Room("hallway", (400, 300), "planks", 9),
+    Room("guest", (150, 420), "planks", 9, 90),
+    Room("kitchen", (400, 450), "tiles", 14, 45),
+    Room("passage", (550, 420), "planks", 9, 90),
+    Room("wc", (600, 370), "small_tiles", 6),
+    Room("bath2", (630, 430), "small_tiles", 6),
+    Room("sdc", (720, 400), "quilt", 10),
+    Room("bath", (280, 515), "small_tiles", 6),
+    Room("closet", (290, 580), "planks", 9, 90),
+    Room("storage", (290, 680), "plate", 10),
+    Room("bedroom", (120, 600), "planks", 9),
+    Room("dining", (480, 600), "planks", 9),
+    Room("holo", (700, 560), "hex", 16),
+    Room("balcony", (420, 730), "deck", 12, -18),
+]
+
+# Where two rooms open into each other with no wall between them, the floor
+# finish still changes: these lines split the floor there (map coords).
+FLOOR_BREAKS = [
+    [(232, 412), (265, 412)],                  # hallway | kitchen (the gap by the guest-room door)
+    [(518, 484), (603, 484)],                  # passage | dining room
+    [(232, 540), (232, 612), (245, 612)],      # walk-in closet | master bedroom
 ]
 
 # ---------------------------------------------------------------------------
