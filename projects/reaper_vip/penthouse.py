@@ -21,7 +21,7 @@ from pathlib import Path
 import numpy as np
 from manifold3d import CrossSection, JoinType, Manifold, OpType
 
-from modelkit.csg import extrude_xy, section, union
+from modelkit.csg import box, extrude_xy, section, union
 from modelkit.export import export_parts
 from projects.reaper_vip import details, plan
 from projects.reaper_vip.plan import M
@@ -82,15 +82,55 @@ def zones() -> dict[str, CrossSection]:
 # ---------------------------------------------------------------------------
 
 
+MIN_WALL = 1.2      # anything thinner than this along a seam is a sliver
+SEAM_BAND = 2.0     # how far from a seam to look for slivers
+
+
+def _slivers(flat: Manifold, zs: dict[str, CrossSection]) -> dict[str, CrossSection]:
+    """Hand thin slivers back to the tile they belong with.
+
+    A seam on a wall face also shaves off whatever stands proud of that face
+    (door-frame lips, the corners of mullions on a curve, wall end caps), leaving
+    strips under a millimetre thick on the wrong tile. Above the floor, find each
+    tile's footprint that is thinner than MIN_WALL within SEAM_BAND of its edge,
+    and give it to the neighbouring zone it touches most. Returns the adjusted
+    zones for everything above the floor."""
+    above = box(-2000, 2000, -2000, 2000, FLOOR_T + 0.01, TOP + 50)
+    out = dict(zs)
+    moves = []
+    for name, z in zs.items():
+        foot = (flat ^ above ^ extrude_xy(z, -1.0, TOP + 50)).project()
+        r = MIN_WALL / 2
+        thin = foot - foot.offset(-r, JoinType.Miter, 2.0).offset(r, JoinType.Miter, 2.0)
+        thin ^= z - z.offset(-SEAM_BAND, JoinType.Miter, 2.0)
+        for piece in thin.decompose():
+            if piece.area() < 0.05:
+                continue
+            grown = piece.offset(0.3, JoinType.Miter, 2.0)
+            near = [(o, (grown ^ zo).area()) for o, zo in zs.items() if o != name]
+            other, overlap = max(near, key=lambda t: t[1])
+            if overlap > 0:
+                moves.append((name, other, grown ^ z))
+    for src, dst, cs in moves:
+        out[src] = out[src] - cs
+        out[dst] = out[dst] + cs
+    return out
+
+
 def build():
     floor, walls = build_shell()
     floor -= details.floor_cuts()
     walls -= details.wall_cuts()
     flat = floor + walls + details.build_props()
 
+    zs = zones()
+    upper = _slivers(flat, zs)
+    below = box(-2000, 2000, -2000, 2000, -1.0, FLOOR_T + 0.01)
+    above = box(-2000, 2000, -2000, 2000, FLOOR_T + 0.01, TOP + 50)
     parts = {}
-    for name, z in zones().items():
-        piece = flat ^ extrude_xy(z, -1.0, TOP + 50)
+    for name, z in zs.items():
+        piece = (flat ^ below ^ extrude_xy(z, -1.0, TOP + 50)) + \
+            (flat ^ above ^ extrude_xy(upper[name], -1.0, TOP + 50))
         # Drop zero-volume slivers left where a wall face lies exactly on a seam.
         piece = union([p for p in piece.decompose() if p.volume() > 1.0])
         if not piece.is_empty():
@@ -100,11 +140,31 @@ def build():
     return flat + painting, parts
 
 
+def seam_slivers(parts) -> list[str]:
+    """Anything above a tile's floor that is thinner than MIN_WALL within 1.5 mm of
+    the tile's edge: a sliver a seam has shaved off a neighbouring wall."""
+    above = box(-2000, 2000, -2000, 2000, FLOOR_T + 0.5, TOP + 50)
+    floor = box(-2000, 2000, -2000, 2000, 0.0, 1.0)
+    r = MIN_WALL / 2
+    found = []
+    for name, (m, _) in parts.items():
+        if not name.startswith("tile_"):
+            continue
+        foot = (m ^ above).project()
+        thin = foot - foot.offset(-r, JoinType.Miter, 2.0).offset(r, JoinType.Miter, 2.0)
+        edge = (m ^ floor).project()
+        thin ^= edge - edge.offset(-1.5, JoinType.Miter, 2.0)
+        found += [f"{name}: {c.area():.1f} mm2 at {c.bounds()[:2]}" for c in thin.decompose() if c.area() > 0.2]
+    return found
+
+
 def main(out_dir: str = str(OUT_DIR)) -> None:
     assembled, parts = build()
     export_parts(assembled, parts, out_dir, "penthouse")
     total = sum(m.volume() for m, _ in parts.values())
     print(f"assembled {assembled.volume() / 1000:.1f} cm3, parts sum {total / 1000:.1f} cm3")
+    slivers = seam_slivers(parts)
+    print("seam slivers: " + ("none" if not slivers else "\n  !! ".join([""] + slivers)))
 
 
 if __name__ == "__main__":

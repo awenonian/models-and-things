@@ -132,7 +132,8 @@ def outline_pts():
     """Outer wall centre lines, round the whole flat (map coords)."""
     pts = list(plan.OUTLINE_STRAIGHT_N) + [(797, 470)]
     pts += smooth(plan.OUTER_CURVE)[1:]
-    pts += list(reversed(smooth([(243, 683), (255, 715), (278, 742), (305, 760), (330, 770)])))[1:]
+    storage = next(w for w in plan.WALLS if w.name == "storage_curve").pts
+    pts += list(reversed(smooth(storage)))[1:]
     pts += [(185, 680)]
     pts += list(reversed(smooth(plan.BEDROOM_CURVE)))
     pts += [(70, 500), (70, 260), (66.5, 260)]

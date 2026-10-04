@@ -97,11 +97,11 @@ WALLS: list[Wall] = [
     # --- master bedroom, bath, closet, storage ---------------------------------
     Wall("bed_n", [(10, 500), (232, 500)], T_EXT),
     Wall("bed_glass", BEDROOM_CURVE + [(185, 680)], T_EXT, "glass", curve=True),
-    Wall("bed_s", [(185, 680), (245, 683)], T_EXT),
+    Wall("bed_s", [(185, 680), (242.5, 683)], T_EXT),      # ends on the seam
     Wall("bath_s", [(232, 538), (328, 538)]),
     Wall("storage_n", [(245, 612), (328, 612)]),
     Wall("storage_w", [(245, 612), (245, 683)]),
-    Wall("storage_curve", [(243, 683), (255, 715), (278, 742), (305, 760), (330, 770)], T_EXT,
+    Wall("storage_curve", [(245.5, 683), (255, 715), (278, 742), (305, 760), (330, 770)], T_EXT,
          curve=True),
     # --- dining room, holo space, balcony --------------------------------------
     Wall("dining_w", [(328, 484), (328, 770)]),
@@ -169,7 +169,7 @@ ROOMS: list[Room] = [
 OUTLINE_STRAIGHT_N = [(66.5, 195), (310, 195), (310, 100), (355, 53), (430, 53), (478, 100),
                       (650, 100), (690, 128), (745, 128), (818, 205), (818, 343), (797, 343)]
 # ...then (797, 470) and OUTER_CURVE to (328, 770), the storage curve back to
-# (243, 683), along the bedroom's south wall and up its curve to (10, 500).
+# its start, along the bedroom's south wall and up its curve to (10, 500).
 
 # ---------------------------------------------------------------------------
 # Print tiles: the plan is cut into bed-sized tiles. Seams run along wall

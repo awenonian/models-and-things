@@ -130,6 +130,11 @@ These worked on the Star Theater; treat them as defaults.
   the limit. Make flares a little steeper (rise = 1.15 × run).
 * **Props sitting flush on a grooved floor** leave tiny bridges over the grooves and coincident
   faces. Sink props into the floor by the groove depth.
+* **A seam on a wall face shaves off whatever stands proud of that face.** That means door-frame
+  lips, mullion corners on a curve, and wall end caps. It leaves strips under a millimetre thick on
+  the next tile, which won't print. The one-piece check misses them because they're still attached
+  to the floor. `reaper_vip/penthouse.py` hands any sub-1.2 mm sliver along a seam back to the
+  neighbouring tile, and the build reports any that remain.
 * **Zone boundaries exactly on a wall face** leave zero-volume slivers when cutting tiles. Drop
   pieces under 1 mm³, or move the boundary a hair off the face.
 * **The overhang report misreads thin loops.** A 0.6 mm groove ceiling running round a perimeter

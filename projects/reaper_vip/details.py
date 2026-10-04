@@ -383,7 +383,7 @@ def painting_up() -> tuple[float, float, float]:
 def guest_closet() -> Manifold:
     """Open-fronted closet against the wall (back at -Y): boxes | shelves | tuxedo."""
     w, d, h = 72.0, 15.0, 22.0
-    m = box(-w / 2, w / 2, -d / 2, -d / 2 + 1.2, 0, h)
+    m = box(-w / 2, w / 2, -d / 2 + 0.5, -d / 2 + 2.0, 0, h)          # back panel, clear of the seam
     for x in (-w / 2, -12.8, 11.2, w / 2 - 1.6):
         m += box(x, x + 1.6, -d / 2, d / 2, 0, h)
     m += box(-w / 2, w / 2, -d / 2, d / 2, 0, 1.0)
@@ -396,7 +396,7 @@ def guest_closet() -> Manifold:
     m += P.books(8, -10.5, -1.0, 8.0, seed=2, depth=7)
     m += P.books(5, -10.5, -1.0, 15.0, seed=9, depth=7) + P.crate(7, 7, 4, False).translate((6, -1, 15.0))
     m += box(11.2, w / 2 - 1.6, -0.6, 0.6, 19.2, 20.4)                    # hanging rail
-    m += tuxedo().translate((23.6, -d / 2 + 1.2, 0))
+    m += tuxedo().translate((23.6, -d / 2 + 2.0, 0))
     return m
 
 
@@ -436,7 +436,7 @@ def build_props() -> Manifold:
               628, 330))
     add(place(P.sauna_bench(20, 8, 6) + P.towels(3).translate((-4.5, 0, 6)) + P.towels(2).translate((5, 0, 6)),
               733, 335, "n"))
-    add(place(P.plant(5.0, 7.0, 7, 12.0, seed=4), 492, 333))
+    add(place(P.plant(5.0, 7.0, 7, 12.0, seed=4), 492, 330))
     add(place(P.plant(5.5, 8.0, 9, 14.0, seed=8), 705, 266))
 
     # --- sauna --------------------------------------------------------------------------

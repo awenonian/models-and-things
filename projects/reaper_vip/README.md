@@ -166,6 +166,10 @@ in place, so nothing needs gluing. The painting is the 15th part.
     (x = 307.5), the spa (under the hot tub's east wall), the dining room (two seams) and the
     balcony.
   * No furniture is cut by a seam.
+  * A seam on a wall face would otherwise shave the door-frame lips and window mullions sticking
+    past that face onto the next tile, as unprintable slivers. The build hands any piece under
+    1.2 mm thick along a seam back to the tile that holds the rest of its wall, and reports any
+    that remain (there are none).
 * **Nothing overhangs.** Furniture sits on solid pedestals that flare out at a little over 45°.
   * Ropes, cage rails, shelves and window heads bridge less than 30 mm.
   * Window heads and the balcony handrail step out at 45° over their thin panes.
