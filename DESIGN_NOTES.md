@@ -135,6 +135,17 @@ These worked on the Star Theater; treat them as defaults.
   the next tile, which won't print. The one-piece check misses them because they're still attached
   to the floor. `reaper_vip/penthouse.py` hands any sub-1.2 mm sliver along a seam back to the
   neighbouring tile, and the build reports any that remain.
+* **Zero-thickness sheets.** Where a cut lands exactly on a face, it can leave a sheet with no
+  thickness standing on the part. The same happens where two pieces only touch face to face
+  instead of overlapping. Slicers and viewers draw these as paper-thin walls, but they have no
+  volume, so volume, one-piece and slice checks all miss them.
+  * Pull every cut in by a hair (`SEAM_GAP` = 0.01 mm in `reaper_vip/penthouse.py`).
+  * Make touching parts overlap by about 0.05 mm (shelves into dividers, items onto shelves, stacked
+    rail steps).
+  * The export report now flags any part with back-to-back faces (`printcheck.sheet_area`).
+* **The floor slab must stop at the outside of the thinnest outside wall.** The slab was
+  offset 3.5 mm (half a 7 mm wall) all round. Next to the 5 mm gym wall that left a 1 mm strip of
+  floor outside it, and a seam put that strip on another tile.
 * **Zone boundaries exactly on a wall face** leave zero-volume slivers when cutting tiles. Drop
   pieces under 1 mm³, or move the boundary a hair off the face.
 * **The overhang report misreads thin loops.** A 0.6 mm groove ceiling running round a perimeter

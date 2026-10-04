@@ -268,12 +268,14 @@ def build_wall(w: plan.Wall) -> Manifold:
 def _chamfered_rail(path, t: float, z_flat: float, top: float) -> Manifold:
     """Rail as wide as the wall sitting on the thin pane, with a stepped 45-degree
     underside so it prints without support. Full width from z_flat to top."""
+    # Each step runs all the way up to `top`, so neighbouring steps overlap instead
+    # of meeting face to face (which can leave zero-thickness sheets in the mesh).
     layers = [extrude_xy(stroke(path, t), z_flat, top)]
     steps = max(1, math.ceil((t - PANE_T) / 2 / 0.45))
+    dz = (t - PANE_T) / 2 / steps
     for k in range(steps):
         wk = PANE_T + (t - PANE_T) * (k + 1) / steps
-        z1 = z_flat - (steps - 1 - k) * (t - PANE_T) / 2 / steps
-        layers.append(extrude_xy(stroke(path, wk), z1 - (t - PANE_T) / 2 / steps, z1))
+        layers.append(extrude_xy(stroke(path, wk), z_flat - (steps - k) * dz, top))
     return union(layers)
 
 

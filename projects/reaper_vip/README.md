@@ -170,6 +170,9 @@ in place, so nothing needs gluing. The painting is the 15th part.
     past that face onto the next tile, as unprintable slivers. The build hands any piece under
     1.2 mm thick along a seam back to the tile that holds the rest of its wall, and reports any
     that remain (there are none).
+  * Every tile edge is pulled in by 0.01 mm. A wall face lying exactly on a seam would otherwise
+    leave a zero-thickness "sheet" of that wall standing on the next tile. The part report checks
+    each part for these sheets, and none are left.
 * **Nothing overhangs.** Furniture sits on solid pedestals that flare out at a little over 45°.
   * Ropes, cage rails, shelves and window heads bridge less than 30 mm.
   * Window heads and the balcony handrail step out at 45° over their thin panes.

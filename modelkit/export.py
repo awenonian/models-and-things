@@ -7,7 +7,7 @@ from pathlib import Path
 from manifold3d import Manifold
 
 from modelkit.csg import write_stl
-from modelkit.printcheck import check, orient
+from modelkit.printcheck import check, orient, sheet_area
 from modelkit.printer import INFILL, PLA_G_PER_CM3, SHELL_MM, USABLE_BED
 
 Parts = dict[str, tuple[Manifold, tuple[float, float, float]]]
@@ -26,7 +26,8 @@ def export_parts(assembled: Manifold, parts: Parts, out_dir: str | Path, name: s
     its `up` is +Z, resting on z = 0), and print one report line per part:
     triangles, footprint, height, solid volume, estimated filament (see
     `filament_grams`), overhangs, and
-    warnings for parts that fall apart into pieces or don't fit the bed."""
+    warnings for parts that fall apart into pieces, don't fit the bed, or contain
+    zero-thickness sheets (see `printcheck.sheet_area`)."""
     out = Path(out_dir)
     n = write_stl(assembled, out / f"{name}_assembled.stl", f"{name}_assembled")
     print(f"{name}_assembled  {n} tris")
@@ -45,6 +46,9 @@ def export_parts(assembled: Manifold, parts: Parts, out_dir: str | Path, name: s
         warn = "" if len(m.decompose()) == 1 else f"  !! {len(m.decompose())} pieces"
         if not rep.fits(USABLE_BED[:2]) or rep.height > USABLE_BED[2]:
             warn += "  !! too big for the bed"
+        sheets = sheet_area(m)
+        if sheets > 1.0:
+            warn += f"  !! {sheets:.0f}mm2 zero-thickness sheets"
         print(f"{pname:26s} {ntri:7d} {fp:>9s} {rep.height:4.0f} {cm3:5.0f} {grams:4.0f}  {ov}"
               f"  (minor {rep.minor_area:.0f}mm2){warn}")
     print(f"{'total':26s} {'':7s} {'':9s} {'':4s} {'':5s} {total_g:4.0f}  "

@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import math
+from collections import defaultdict
 from dataclasses import dataclass, field
 
 import numpy as np
-from manifold3d import Manifold
+from manifold3d import CrossSection, FillRule, Manifold, OpType
 
 
 @dataclass
@@ -126,3 +127,40 @@ def orient(m: Manifold, up: tuple[float, float, float]) -> Manifold:
     m = m.transform(np.hstack([r, np.zeros((3, 1))]))
     bb = m.bounding_box()
     return m.translate((-(bb[0] + bb[3]) / 2, -(bb[1] + bb[4]) / 2, -bb[2]))
+
+
+def sheet_area(m: Manifold, tol: float = 0.02) -> float:
+    """Area of faces lying back to back in one plane: zero-thickness sheets.
+
+    They have no volume, so volume and one-piece checks miss them, but slicers and
+    viewers show them as paper-thin walls. They come from cuts that land exactly
+    on a face, and from parts that only touch face to face instead of overlapping."""
+    mesh = m.to_mesh()
+    v = np.asarray(mesh.vert_properties)[:, :3].astype(float)
+    t = np.asarray(mesh.tri_verts, dtype=np.int64)
+    p0, p1, p2 = v[t[:, 0]], v[t[:, 1]], v[t[:, 2]]
+    n = np.cross(p1 - p0, p2 - p0)
+    a = np.linalg.norm(n, axis=1)
+    planes: dict = defaultdict(lambda: ([], []))
+    for i in np.nonzero(a > 1e-9)[0]:
+        nn = n[i] / a[i]
+        k = int(np.argmax(np.abs(nn)))
+        s = 1.0 if nn[k] > 0 else -1.0
+        key = (tuple(np.round(nn * s, 3)), round(float(np.dot(nn * s, p0[i])) / tol))
+        planes[key][0 if s > 0 else 1].append(i)
+    total = 0.0
+    for (nn, _), (pos, neg) in planes.items():
+        if not pos or not neg:
+            continue
+        nn = np.array(nn)
+        e1 = np.cross(nn, [0, 0, 1.0]) if abs(nn[2]) < 0.9 else np.cross(nn, [1.0, 0, 0])
+        e1 /= np.linalg.norm(e1)
+        e2 = np.cross(nn, e1)
+
+        def flat(ids):
+            tris = [CrossSection([np.array([(q @ e1, q @ e2) for q in (p0[i], p1[i], p2[i])])],
+                                 FillRule.NonZero) for i in ids]
+            return CrossSection.batch_boolean(tris, OpType.Add)
+
+        total += (flat(pos) ^ flat(neg)).area()
+    return total

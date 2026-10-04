@@ -84,6 +84,7 @@ def zones() -> dict[str, CrossSection]:
 
 MIN_WALL = 1.2      # anything thinner than this along a seam is a sliver
 SEAM_BAND = 2.0     # how far from a seam to look for slivers
+SEAM_GAP = 0.01     # each tile edge is pulled in this far
 
 
 def _slivers(flat: Manifold, zs: dict[str, CrossSection]) -> dict[str, CrossSection]:
@@ -129,8 +130,12 @@ def build():
     above = box(-2000, 2000, -2000, 2000, FLOOR_T + 0.01, TOP + 50)
     parts = {}
     for name, z in zs.items():
-        piece = (flat ^ below ^ extrude_xy(z, -1.0, TOP + 50)) + \
-            (flat ^ above ^ extrude_xy(upper[name], -1.0, TOP + 50))
+        # Pull every edge in by a hair: a wall face lying exactly on a seam would
+        # otherwise leave a zero-thickness sheet of that wall standing on this tile.
+        lo = z.offset(-SEAM_GAP, JoinType.Miter, 2.0)
+        hi = upper[name].offset(-SEAM_GAP, JoinType.Miter, 2.0)
+        piece = (flat ^ below ^ extrude_xy(lo, -1.0, TOP + 50)) + \
+            (flat ^ above ^ extrude_xy(hi, -1.0, TOP + 50))
         # Drop zero-volume slivers left where a wall face lies exactly on a seam.
         piece = union([p for p in piece.decompose() if p.volume() > 1.0])
         if not piece.is_empty():
@@ -142,7 +147,9 @@ def build():
 
 def seam_slivers(parts) -> list[str]:
     """Anything above a tile's floor that is thinner than MIN_WALL within 1.5 mm of
-    the tile's edge: a sliver a seam has shaved off a neighbouring wall."""
+    the tile's edge (a sliver a seam has shaved off a neighbouring wall), and any
+    part of the floor slab thinner than that. Zero-thickness sheets are caught
+    separately by the export report (printcheck.sheet_area)."""
     above = box(-2000, 2000, -2000, 2000, FLOOR_T + 0.5, TOP + 50)
     floor = box(-2000, 2000, -2000, 2000, 0.0, 1.0)
     r = MIN_WALL / 2
@@ -155,6 +162,12 @@ def seam_slivers(parts) -> list[str]:
         edge = (m ^ floor).project()
         thin ^= edge - edge.offset(-1.5, JoinType.Miter, 2.0)
         found += [f"{name}: {c.area():.1f} mm2 at {c.bounds()[:2]}" for c in thin.decompose() if c.area() > 0.2]
+        # The floor itself, below its grooves: strips of slab left outside a wall.
+        slab = m.slice(FLOOR_T / 2)
+        fins = slab - slab.offset(-r, JoinType.Miter, 2.0).offset(r, JoinType.Miter, 2.0)
+        # (Under 1 mm2 is rounding noise from the offsets along diagonal edges.)
+        found += [f"{name}: floor strip {c.area():.1f} mm2 at {c.bounds()[:2]}" for c in fins.decompose()
+                  if c.area() > 1.0]
     return found
 
 

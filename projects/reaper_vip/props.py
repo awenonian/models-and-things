@@ -549,7 +549,7 @@ def hotdogs() -> Manifold:
     m = box(-6, 6, -4, 4, 0, 0.8)
     for y in (-2.2, 0.0, 2.2):
         m += box(-4.5, 4.5, y - 0.8, y + 0.8, 0.8, 1.6)
-        bun = extrude_yz(section(circle_pts(y, 1.6, 0.8, 12, 0, 180)), -4.5, 4.5)
+        bun = extrude_yz(section(circle_pts(y, 1.55, 0.8, 12, 0, 180)), -4.5, 4.5)   # overlaps the sausage
         m += bun
         m += box(-5.2, 5.2, y - 0.45, y + 0.45, 1.6, 2.4)
     return m
@@ -586,7 +586,8 @@ def bone(l: float = 9.0) -> Manifold:
 
 
 def holo_emitter() -> Manifold:
-    m = cyl(3.2, 0, 1.2, segments=24, r_top=2.6) + cyl(1.0, 1.2, 4.0, segments=12)
+    m = cyl(3.2, 0, 1.2, segments=24, r_top=2.6) + cyl(1.0, 1.2, 3.0, segments=12)
+    m += cyl(1.0, 3.0, 4.05, r_top=2.0, segments=24)                     # 45-degree neck under the dome
     m += sphere(2.0, 0, 0, 4.0, 16) ^ box(-3, 3, -3, 3, 4.0, 7.0)
     return m
 

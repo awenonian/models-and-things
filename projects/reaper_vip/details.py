@@ -388,14 +388,14 @@ def guest_closet() -> Manifold:
         m += box(x, x + 1.6, -d / 2, d / 2, 0, h)
     m += box(-w / 2, w / 2, -d / 2, d / 2, 0, 1.0)
     for z in (8.0, 15.0):
-        m += box(-11.2, 11.2, -d / 2, d / 2, z - 1.2, z)
+        m += box(-12.0, 12.0, -d / 2, d / 2, z - 1.2, z)          # into the dividers
     m += P.box_stack([(-29, -1, 11, 11, 7, 0), (-18.5, 0, 9, 12, 6, 0), (-28.5, -1.5, 10, 9, 6, 8),
                       (-19, 0.5, 8, 8, 5, -6), (-24, -1, 9, 10, 4.5, 4)], seed=1).translate((0, 0, 1.0))
-    m += P.pot(3.2, 3.0).translate((-5, 0, 1.0)) + P.pot(2.6, 2.4).translate((-5, 0, 4.0))
-    m += P.pot(3.0, 4.0).rotate((0, 0, 180)).translate((5, -1, 1.0))
-    m += P.books(8, -10.5, -1.0, 8.0, seed=2, depth=7)
-    m += P.books(5, -10.5, -1.0, 15.0, seed=9, depth=7) + P.crate(7, 7, 4, False).translate((6, -1, 15.0))
-    m += box(11.2, w / 2 - 1.6, -0.6, 0.6, 19.2, 20.4)                    # hanging rail
+    m += P.pot(3.2, 3.0).translate((-5, 0, 0.95)) + P.pot(2.6, 2.4).translate((-5, 0, 3.95))
+    m += P.pot(3.0, 4.0).rotate((0, 0, 180)).translate((5, -1, 0.95))
+    m += P.books(8, -10.5, -1.0, 7.95, seed=2, depth=7)
+    m += P.books(5, -10.5, -1.0, 14.95, seed=9, depth=7) + P.crate(7, 7, 4, False).translate((6, -1, 14.95))
+    m += box(12.0, w / 2 - 0.8, -0.6, 0.6, 19.2, 20.4)                    # hanging rail
     m += tuxedo().translate((23.6, -d / 2 + 2.0, 0))
     return m
 
