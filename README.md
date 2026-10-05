@@ -12,6 +12,7 @@ already rotated for the slicer.
 | Project | What it is |
 |---|---|
 | [The Star Theater](projects/star_theater/) | Colette Du Bois' theater from Malifaux: a proscenium stage with opera boxes, an orchestra pit and backstage, facing raked seating with a balcony. 20 parts. |
+| [Reaper VIP](projects/reaper_vip/) | Steel Jackhammer's penthouse from the Cy_Borg starter adventure: the whole flat as cutaway floor tiles with low walls, furnished from the map's notes (sparring ring, hot tub, big-cat cage, removable Cyber-Lich painting hiding the safe). 15 parts. |
 
 ![The Star Theater](projects/star_theater/images/theater_scene2.png)
 
@@ -26,6 +27,7 @@ modelkit/            shared tools for every project
   hollow.py          supportless vaulted channels for hollowing thick parts (mainly for resin)
   layout.py          lays print parts out on one "plate" for preview images
 tools/render/        headless three.js renderer for preview PNGs
+tools/mapgrid.py     zoomed, gridded crops of a map image, for tracing floor plans
 projects/<name>/     one folder per model: code, README, images/, output/ (generated STLs)
 DESIGN_NOTES.md      the brief for new designs: printer, table, scale, gameplay, print conventions
 ```

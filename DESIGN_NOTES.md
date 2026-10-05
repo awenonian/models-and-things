@@ -52,6 +52,14 @@ something new is learned. Machine-readable values live in `modelkit/printer.py`.
     playbills) are what make a set feel like a place.
 * **Multi-piece sets:** pieces that face each other across the table, so they can be spread apart
   to make room.
+* **Floor plans from a map (Reaper VIP):** a whole location as cutaway floor tiles.
+  * Walls are cut off 25 mm above the floor. That's low enough to reach over and move models, and
+    tall enough for wall detail (a safe, a painting, padding).
+  * Trace the map at 1 px = 1 mm (`tools/mapgrid.py` makes gridded crops). Room sizes came out right
+    for 30–40 mm bases.
+  * Put everything the room notes mention into the model, but leave characters and creatures out:
+    they're minis.
+  * A secret worth finding can be its own part: the painting lifts off its pegs to show the safe.
 
 ## Printing conventions
 
@@ -80,6 +88,16 @@ These worked on the Star Theater; treat them as defaults.
   0.2 mm clearance.
 * **Fine detail:** about 1.2 mm minimum (0.8 mm grooves are fine). Relief text needs a cap height of
   4 mm or more.
+* **Floor tiles with walls and furniture built in** print flat with no supports.
+  * Seams run along a wall's face, so one tile keeps the whole wall.
+  * When both faces of a wall carry detail, run the seam down the middle of the wall instead, so
+    each half keeps its own face. A detail on the far side of a seam is left floating; the one-piece
+    check catches it.
+  * Keep furniture clear of seams.
+* **Furniture that prints in place:** use solid pedestals that flare out to the top, not legs.
+  Bridges of 30 mm or less are fine for shelves, rails and ropes.
+* **Glass walls** are a sill, a 1.6 mm pane, mullions at most ~26 mm apart, and a head rail that
+  steps out at 45° over the pane.
 
 ## Workflow and tooling
 
@@ -108,3 +126,38 @@ These worked on the Star Theater; treat them as defaults.
   model. The `extrude_*` helpers now guard against it.
 * **Decoration past the end of a piece:** frames and mouldings that stick out past a wall's end
   print over air. Trim decoration to the piece's outline.
+* **Exactly 45° gets flagged.** Floating-point noise puts half the faces of a true 45° slope past
+  the limit. Make flares a little steeper (rise = 1.15 × run).
+* **Props sitting flush on a grooved floor** leave tiny bridges over the grooves and coincident
+  faces. Sink props into the floor by the groove depth.
+* **A seam on a wall face shaves off whatever stands proud of that face.** That means door-frame
+  lips, mullion corners on a curve, and wall end caps. It leaves strips under a millimetre thick on
+  the next tile, which won't print. The one-piece check misses them because they're still attached
+  to the floor. `reaper_vip/penthouse.py` hands any sub-1.2 mm sliver along a seam back to the
+  neighbouring tile, and the build reports any that remain.
+* **Zero-thickness sheets.** Where a cut lands exactly on a face, it can leave a sheet with no
+  thickness standing on the part. The same happens where two pieces only touch face to face
+  instead of overlapping. Slicers and viewers draw these as paper-thin walls, but they have no
+  volume, so volume, one-piece and slice checks all miss them.
+  * Pull every cut in by a hair (`SEAM_GAP` = 0.01 mm in `reaper_vip/penthouse.py`).
+  * Make touching parts overlap by about 0.05 mm (shelves into dividers, items onto shelves, stacked
+    rail steps).
+  * The export report now flags any part with back-to-back faces (`printcheck.sheet_area`).
+* **Floor finishes come from the walls, not from rough room outlines.** Rectangles drawn per room
+  overlapped and crossed walls, laying two patterns over each other. Instead, split the slab along
+  each wall's full footprint, plus break lines where rooms open into each other with no wall.
+  Give each room the region around a seed point (`shell.room_regions`).
+* **Free-standing stubs at seams.** Every tile edge must leave each wall piece attached to
+  something solid on its own tile. Watch for:
+  * a wall's end cap poking past the wall it meets (end walls on the other wall's centre line)
+  * the short end of a wall or screen beside a doorway, when the wall it joins is on the other tile
+    (give the stub to that tile)
+  * junctions where several walls end at one point and a seam crosses at an angle (put a solid
+    round pier there, owned by one tile)
+* **The floor slab must stop at the outside of the thinnest outside wall.** The slab was
+  offset 3.5 mm (half a 7 mm wall) all round. Next to the 5 mm gym wall that left a 1 mm strip of
+  floor outside it, and a seam put that strip on another tile.
+* **Zone boundaries exactly on a wall face** leave zero-volume slivers when cutting tiles. Drop
+  pieces under 1 mm³, or move the boundary a hair off the face.
+* **The overhang report misreads thin loops.** A 0.6 mm groove ceiling running round a perimeter
+  shows up as a big region. Avoid groove ceilings (cut grooves from the top), or ignore them.

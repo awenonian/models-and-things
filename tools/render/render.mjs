@@ -33,6 +33,28 @@ const VIEWS = {
   pit:      { eye: [-170, 290, 110], target: [-40, 130, 15], fov: 40 },
   plate:    { eye: [394, -820, 620], target: [394, -110, 0], fov: 38 },
   dove:     { eye: [-40, 120, 120], target: [-88, 0, 158], fov: 30 },
+  // Reaper VIP penthouse (origin at the middle of the flat, +Y = north on the map)
+  p_top:    { eye: [0, -40, 1500], target: [0, 0, 0], fov: 32 },
+  p_hero:   { eye: [-520, -900, 760], target: [0, -20, 0], fov: 38 },
+  p_ne:     { eye: [520, 760, 640], target: [0, 20, 0], fov: 38 },
+  p_gym:    { eye: [120, 40, 210], target: [-20, 230, 5], fov: 40 },
+  p_spa:    { eye: [260, -70, 200], target: [190, 170, 5], fov: 40 },
+  p_dining: { eye: [130, -470, 230], target: [40, -170, 5], fov: 40 },
+  p_holo:   { eye: [430, -390, 210], target: [280, -150, 5], fov: 40 },
+  p_bed:    { eye: [-250, -430, 220], target: [-290, -160, 5], fov: 40 },
+  p_kitchen:{ eye: [-10, -240, 200], target: [-50, 0, 5], fov: 40 },
+  p_corr:   { eye: [-150, -80, 200], target: [-220, 140, 5], fov: 40 },
+  p_sdc:    { eye: [250, -170, 200], target: [290, 30, 5], fov: 40 },
+  p_guest:  { eye: [-180, -220, 200], target: [-270, 10, 5], fov: 40 },
+  p_paint:  { eye: [300, -150, 45], target: [240, -218, 16], fov: 30 },
+  p_plate:  { eye: [531, -1250, 900], target: [531, -142, 0], fov: 40 },
+  t_top:    { eye: [0, -30, 420], target: [0, 0, 0], fov: 40 },
+  t_low:    { eye: [-160, -240, 160], target: [0, 0, 5], fov: 40 },
+  p_piers:  { eye: [140, -350, 120], target: [240, -225, 10], fov: 40 },
+  f_south:  { eye: [180, -520, 260], target: [130, -200, 0], fov: 40 },
+  f_spa:    { eye: [140, 60, 260], target: [150, 150, 0], fov: 45 },
+  f_closet: { eye: [-260, -230, 200], target: [-150, -170, 0], fov: 40 },
+  p_bath:   { eye: [-90, -320, 170], target: [-120, -150, 5], fov: 40 },
 };
 const server = http.createServer((req, res) => {
   const u = decodeURIComponent(req.url.split('?')[0]);
